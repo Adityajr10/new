@@ -41,6 +41,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 details summary{cursor:pointer;color:var(--mute);margin-top:12px;min-height:32px}
 .hide{display:none!important}
 .note{font-size:14px;color:var(--mute);margin:6px 0 0}
+.chk{display:flex;gap:10px;align-items:center;color:var(--ink);font-size:16px;margin:0}.chk input{width:22px;min-height:22px;flex:none}
 #how p{margin:0 0 8px}
 video#prev{width:100%;max-width:280px;border-radius:12px;margin-top:10px;display:block}
 a.dl{color:var(--yel);display:inline-block;margin-top:8px}
@@ -73,7 +74,9 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
  </section>
 
  <section class="card" id="pBid"><h2>Auction desk</h2>
-  <button class="go" id="nextBtn">Next player</button>
+  <div class="bar" style="margin-top:0"><button class="go" id="voiceBtn">Start voice game</button><button id="nextBtn">Next player</button></div>
+  <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div></div>
+  <p class="note" id="micNote">Say your bid out loud, like "3 dollars". Bids take turns, so you don't need to say your name, but you can ("Tom 5"). No mic? Tap your half of the stage to raise the bid by $1.</p>
   <div class="row" style="margin-top:12px"><div><label for="custom">Or auction a player you choose</label><input id="custom" list="names" placeholder="Type a name" autocomplete="off"></div><div style="align-self:end"><button id="customBtn" style="width:100%">Put up for auction</button></div></div>
   <label for="amt">Winning bid ($)</label>
   <div class="amt"><button id="minus" aria-label="Lower bid">−</button><input id="amt" type="number" min="1" value="1" inputmode="numeric"><button id="plus" aria-label="Raise bid">+</button></div>
@@ -328,7 +331,7 @@ const CATS={
 $('cat').innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">5 ${c.t.toLowerCase()} players</option>`).join('');
 $('club').innerHTML=Object.entries(CLUB).map(([k,c])=>`<option value="${k}">${c[0]}</option>`).join('')+'<option value="ANY">Any club</option>';
 
-const HOWB=`<p>Both players wear headphones with music on, so neither can hear the other's bids. The host taps <b>Next player</b> and you both shout or hold up bids.</p><p>The host enters the winning bid and taps who won. The winner chooses which empty spot (ST, CM, CM, CB or GK) the player goes in. You must keep at least $1 for every other empty spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
+const HOWB=`<p>Tap <b>Start voice game</b> and allow the microphone. The game reads out each player and says who bids first. Then say your bids out loud, like "2 dollars", "3 dollars".</p><p>After the last bid it counts down, then says "sold" and moves the player's card into the winner's team, in the best empty spot. Then the next player comes up. You must keep at least $1 for every other empty spot.</p><p>You can still set the bid and tap <b>Sold to</b> yourself, and the winner picks the spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
 const HOWQ=`<p>Pick a challenge and a team, for example the 5 tallest Real Madrid players. Both shout a name at the same time. The host types it and taps whoever said it first.</p><p>If you both said the same player, the slower one has to name someone else. Once both have 5, the totals are added up and the winner appears on screen.</p>`;
 
 let mode='bid',S;const photos={};
@@ -341,33 +344,35 @@ function cands(s){const k=norm(s);if(!k)return[];const tok=p=>norm(p.n).split(' 
 function owner(n){for(const i of[0,1]){if(mode==='bid'?S.teams[i].some(s=>s.p&&s.p.n===n):S.quiz[i].some(p=>p.n===n))return i}return -1}
 
 function fresh(){const b=Math.max(5,Math.min(500,Math.round(+$('budget').value)||20));
- S={money:[b,b],teams:[0,1].map(()=>SLOTS.map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
+ clearTimeout(autoT);endAt=0;anim=null;try{speechSynthesis.cancel()}catch(e){}
+ S={lead:null,money:[b,b],teams:[0,1].map(()=>SLOTS.map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
  $('amt').value=1;$('qvRow').classList.add('hide');ui();say('')}
 const KEYS=['money','teams','quiz','cur','shown','done','last'];
 function snap(){S.hist.push(JSON.stringify(KEYS.reduce((o,k)=>(o[k]=S[k],o),{})))}
-function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');Object.assign(S,JSON.parse(h));S.pending=null;S.warn=null;ui();say('Undone')}
+function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');clearTimeout(autoT);endAt=0;anim=null;Object.assign(S,JSON.parse(h));S.pending=null;S.lead=null;S.warn=null;ui();say('Undone')}
 
 function nextPlayer(){if(S.done)return;const pool=$('pool').value;
  let ps=DB.filter(p=>(pool==='all'||(pool==='old')===p.L)&&!S.shown.includes(p.n));
  const need=new Set();S.teams.forEach(t=>t.forEach(s=>{if(!s.p)need.add(s.pos)}));
  const pref=ps.filter(p=>need.has(grp(p.pos)));if(pref.length)ps=pref;
  if(!ps.length)return say('No players left in this pool. Switch the pool or type a name.');
- snap();S.cur=ps[Math.random()*ps.length|0];S.shown.push(S.cur.n);S.pending=null;$('amt').value=1;ui();say('Bidding is open.')}
+ clearTimeout(autoT);snap();S.cur=ps[Math.random()*ps.length|0];S.shown.push(S.cur.n);S.pending=null;$('amt').value=1;ui();announce()}
 function customAuction(){if(S.done)return;const v=$('custom').value.trim();if(!v)return say('Type a player name first');const c=cands(v);
  if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));
  const p=c[0]||{n:title(v),pos:'?',h:0,r:75,y:0,c:[]};
  if(owner(p.n)>=0)return say(p.n+' is already in a team');
- snap();S.cur=p;S.shown.push(p.n);S.pending=null;$('custom').value='';$('amt').value=1;ui();say(c[0]?'Bidding is open.':p.n+" isn't on our list, so he counts as a 75 rating.")}
-function sell(i){if(S.done||!S.cur)return say('Tap Next player first');const price=Math.round(+$('amt').value);const empty=S.teams[i].filter(s=>!s.p).length;
+ clearTimeout(autoT);snap();S.cur=p;S.shown.push(p.n);S.pending=null;$('custom').value='';$('amt').value=1;ui();announce();if(!c[0])say(p.n+" isn't on our list, so he counts as a 75 rating.")}
+function sell(i){if(S.done||!S.cur)return say('Tap Next player first');endAt=0;const price=Math.round(+$('amt').value);const empty=S.teams[i].filter(s=>!s.p).length;
  if(!empty)return say(N(i)+"'s team is already full");if(!(price>=1))return say('Bids start at $1');
  const max=S.money[i]-(empty-1);if(price>max)return say(`${N(i)} can bid $${max} at most (keep $1 for each other empty spot)`);
  S.pending={i,price};ui();say('')}
-function place(k){const{i,price}=S.pending;snap();const s=S.teams[i][k];s.p=S.cur;s.price=price;S.money[i]-=price;S.last={i};S.cur=null;S.pending=null;
- if(S.teams.every(t=>t.every(x=>x.p)))S.done=true;ui();say(S.done?'Both teams are full. The result is on screen.':`${s.p.n} joins ${N(i)} at ${s.pos}. Tap Next player.`)}
+function place(k){const{i,price}=S.pending;snap();const s=S.teams[i][k];s.p=S.cur;s.price=price;S.money[i]-=price;S.last={i};S.cur=null;S.pending=null;S.lead=null;endAt=0;
+ anim={p:s.p,i,k,t0:performance.now()};if(S.teams.every(t=>t.every(x=>x.p)))S.done=true;ui();say(`${s.p.n} joins ${N(i)} at ${s.pos}.`);
+ speak(`${s.p.n}, sold to ${N(i)} for ${price} dollar${price>1?'s':''}.`,afterSale)}
 function reveal(){const A=$('sb0').value,B=$('sb1').value;if(A===''||B==='')return say('Both players need to type a bid');const a=Math.round(+A),b=Math.round(+B);
  if(a===b)return say(`Tie at $${a}. Bid again.`);$('amt').value=Math.max(a,b);$('sb0').value=$('sb1').value='';sell(a>b?0:1);
  if(!S.pending)return;$('slotQ').textContent=`${N(0)} $${a} vs ${N(1)} $${b}. `+$('slotQ').textContent}
-function skip(){if(!S.cur)return;snap();S.cur=null;S.pending=null;ui();say('No sale. Tap Next player.')}
+function skip(){if(!S.cur)return;clearTimeout(autoT);endAt=0;S.lead=null;snap();S.cur=null;S.pending=null;ui();say('No sale. Tap Next player.')}
 
 function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say('Type the name that was said first');const C=CATS[$('cat').value],club=$('club').value;
  if(S.quiz[i].length>=5)return say(N(i)+' already has 5 players');
@@ -377,8 +382,58 @@ function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say(
   p={n:title(v),pos:'?',h:0,r:0,y:YEAR,c:[]};p[C.k]=+q}
  const o=owner(p.n);if(o>=0)return say(`${p.n} already belongs to ${N(o)}. Name someone else.`);
  if(club!=='ANY'&&p.c.length&&!p.c.includes(club)&&S.warn!==p.n){S.warn=p.n;return say(`Our list doesn't show ${p.n} at ${CLUB[club][0]}. Tap again to allow him anyway.`)}
- snap();S.quiz[i].push(p);S.last={i,p};S.warn=null;$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide');
+ snap();S.quiz[i].push(p);S.last={i,p};anim={p,i,k:S.quiz[i].length-1,t0:performance.now()};speak(`${p.n}, to ${N(i)}.`);S.warn=null;$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide');
  if(S.quiz.every(t=>t.length>=5))S.done=true;ui();say(S.done?'Both teams are done. The result is on screen.':`${p.n} goes to ${N(i)} (${C.f(C.v(p))})`)}
+
+/* ---------- voice host ---------- */
+let speaking=false,muteUntil=0,listening=false,recog=null,endAt=0,noBidAt=0,autoT=0,anim=null,deb=0;const used={},ANCH=[[],[]];
+const POSN=p=>p==='?'?'':({GK:'goalkeeper',CB:'defender',LB:'defender',RB:'defender',CM:'midfielder',AM:'midfielder',RM:'midfielder'})[p]||'forward';
+const auto=()=>$('auto').checked;
+const open1=()=>{const f=[0,1].filter(i=>S.teams[i].some(s=>!s.p));return f.length===1?f[0]:(S.shown.length%2?0:1)};
+function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+700;if(cb)cb()};
+ const ss=window.speechSynthesis;if(!ss||!t){setTimeout(fin,300);return}
+ try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;u.onend=fin;u.onerror=fin;speaking=true;ss.cancel();ss.speak(u)}catch(e){fin();return}
+ setTimeout(fin,1800+t.length*90)}
+function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=POSN(p.pos);
+ say(`${p.n} is up. ${N(o)} bids first.`);
+ speak(`${p.n}${pn?', '+pn:''}. ${N(o)} to bid first.`,()=>{noBidAt=Date.now()+15000})}
+function bid(i,amt,src){if(mode!=='bid'||S.done||!S.cur||S.pending)return;
+ if(S.teams[i].every(s=>s.p)){i=1-i;if(S.teams[i].every(s=>s.p))return}
+ const cur=S.lead?S.lead.amt:0;if(!(amt>cur))return say(`Heard $${amt}, but the bid is already $${cur}. Go higher.`);
+ const empty=S.teams[i].filter(s=>!s.p).length,max=S.money[i]-(empty-1);
+ if(amt>max)return say(`${N(i)} can only bid up to $${max}.`);
+ S.lead={i,amt};$('amt').value=amt;noBidAt=0;endAt=auto()?Date.now()+(+$('cd').value)*1000:0;
+ say(`${N(i)} bids $${amt}`+(src==='voice'?' (heard by mic)':''))}
+function afterSale(){if(S.done){const r=result(),[a,b]=r.s;speak(a===b?"Full time. It's a draw!":`Full time. ${N(a>b?0:1)} wins, ${Math.max(a,b)} to ${Math.min(a,b)}.`)}
+ else if(auto())autoT=setTimeout(nextPlayer,1300)}
+function autoSell(){const{i,amt}=S.lead,p=S.cur,t=S.teams[i];let k=t.findIndex(s=>!s.p&&s.pos===grp(p.pos));if(k<0)k=t.findIndex(s=>!s.p);
+ snap();t[k].p=p;t[k].price=amt;S.money[i]-=amt;S.cur=null;S.lead=null;S.last={i};anim={p,i,k,t0:performance.now()};
+ if(S.teams.every(x=>x.every(s=>s.p)))S.done=true;ui();say(`${p.n} sold to ${N(i)} for $${amt}, at ${t[k].pos}.`);
+ speak(`${p.n}, sold to ${N(i)} for ${amt} dollar${amt>1?'s':''}!`,afterSale)}
+function tick(){const t=Date.now();if(mode!=='bid'||S.done||!S.cur||S.pending||speaking)return;
+ if(endAt&&t>=endAt){endAt=0;if(S.lead)autoSell()}
+ else if(auto()&&!S.lead&&noBidAt&&t>noBidAt){noBidAt=0;const p=S.cur;snap();S.cur=null;ui();say(`No bids for ${p.n}.`);speak(`No bids for ${p.n}. Next player.`,()=>{autoT=setTimeout(nextPlayer,600)})}}
+const W2N={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90,hundred:100};
+const SOFT={to:2,too:2,tu:2,for:4,fore:4,won:1,ek:1,do:2,teen:3,char:4,chaar:4,paanch:5,panch:5,chhe:6,che:6,saat:7,aath:8,nau:9,das:10};
+function parseBid(w){let amt=null,who=null;
+ for(let j=0;j<w.length;j++){const x=w[j],nx=w[j+1]||'';let n=null;
+  if(/^\d+$/.test(x))n=+x;else if(W2N[x]!==undefined){n=W2N[x];if(n>=20&&n<100&&n%10===0&&W2N[nx]<10){n+=W2N[nx];j++}}
+  else if(SOFT[x]&&/^(dollar|buck|rupee|rs)/.test(nx))n=SOFT[x];
+  if(n!==null&&n>0&&n<=1000)amt=n}
+ for(const i of[0,1]){const k=norm(N(i)).split(' ')[0];if(k&&w.includes(k))who=i}
+ return amt?{amt,who}:null}
+function run(idx,text){const w=norm(text).split(' ').filter(Boolean),from=Math.min(used[idx]||0,w.length);used[idx]=w.length;
+ if(speaking||Date.now()<muteUntil||mode!=='bid'||!S.cur||S.pending)return;
+ const b=parseBid(w.slice(from));if(!b)return;
+ let i=b.who;if(i===null||i===undefined)i=S.lead?1-S.lead.i:open1();bid(i,b.amt,'voice')}
+function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$('micNote').textContent='This browser can\'t listen for bids. Tap your half of the stage to raise the bid by $1, or use the buttons below.';return}
+ if(listening)return;listening=true;recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;
+ recog.onstart=()=>{for(const k in used)delete used[k]};
+ recog.onresult=e=>{const idx=e.results.length-1,r=e.results[idx],t=r[0].transcript;clearTimeout(deb);if(r.isFinal)run(idx,t);else deb=setTimeout(()=>run(idx,t),700)};
+ recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){listening=false;$('micNote').textContent='The microphone is blocked, so voice bids are off. Tap your half of the stage to raise the bid by $1.'}};
+ recog.onend=()=>{if(listening)setTimeout(()=>{try{recog.start()}catch(e){}},250)};
+ try{recog.start();$('micNote').textContent='Listening for bids. Say "2 dollars", "3 dollars"… You can add your name ("Tom 5"). Tap your half of the stage to raise by $1.'}catch(e){listening=false}}
 
 function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:'Total team rating'};
  const C=CATS[$('cat').value];return{s:S.quiz.map(t=>t.reduce((a,p)=>a+C.v(p),0)),f:C.f,hi:C.hi,sub:C.sub}}
@@ -415,24 +470,36 @@ function card(p,tag,cap){const x=380,y=290,w=320,h=330,ph=p&&photos[p.n];ctx.sav
  ctx.restore();ctx.lineWidth=6;ctx.strokeStyle='rgba(255,255,255,.9)';rr(x,y,w,h,18);ctx.stroke();
  if(tag)txt(tag,x+w/2,ph?y+h*.62:y+h-36,ph?120:96,'#f5e663','center',w-20);
  txt(cap,540,y+h+78,62,'#fff','center',980)}
+function mini(p,cx,cy,r){const ph=photos[p.n];ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.clip();
+ if(ph){const sc=Math.max(2*r/ph.width,2*r/ph.height);ctx.drawImage(ph,cx-ph.width*sc/2,cy-ph.height*sc/2,ph.width*sc,ph.height*sc)}
+ else{const cc=p.c.filter(k=>CLUB[k]).slice(-1)[0];ctx.fillStyle=cc?CLUB[cc][1]:'#2f4a3a';ctx.fillRect(cx-r,cy-r,2*r,2*r);txt(p.n.split(' ').map(s=>s[0]).slice(0,2).join(''),cx,cy+r*.36,r*.95,'#fff','center',r*1.7)}
+ ctx.restore();ctx.lineWidth=Math.max(3,r*.1);ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke()}
+const short=n=>n.length>16?n.split(' ').slice(-1)[0]:n;
 function team(i,q,C){const R=i===1;
  for(let k=0;k<5;k++){const yy=1470+k*100,sl=q?{pos:(k+1)+'.',p:S.quiz[i][k]||null}:S.teams[i][k];
   const lw=txt(R?'- '+sl.pos:sl.pos+' -',R?1060:20,yy,84,'#fff',R?'right':'left',240);
-  if(sl.p){const nx=R?1060-lw-16:20+lw+16,mw=520-lw-36;txt(sl.p.n,nx,yy-24,44,'#fff',R?'right':'left',mw);
+  const ax=R?1060-lw-48:20+lw+48,ay=yy-28;ANCH[i][k]={x:ax,y:ay};
+  if(sl.p&&!(anim&&anim.i===i&&anim.k===k)){mini(sl.p,ax,ay,30);const nx=R?ax-42:ax+42,mw=520-lw-110;txt(short(sl.p.n),nx,yy-24,44,'#fff',R?'right':'left',mw);
    txt(q?C.f(C.v(sl.p)):'$'+sl.price,nx,yy+18,34,'#43e35a',R?'right':'left',mw)}}}
+function flyer(){if(!anim)return;const e=(performance.now()-anim.t0)/900;if(e>=1){anim=null;return}
+ const a=ANCH[anim.i][anim.k];if(!a)return;const z=1-Math.pow(1-e,3),x=540+(a.x-540)*z,y=455+(a.y-455)*z,r=150+(30-150)*z;mini(anim.p,x,y,r)}
+function auctionInfo(){if(!S.cur||S.done)return;const now=Date.now();
+ if(S.lead){txt(`${N(S.lead.i)} $${S.lead.amt}`,540,840,110,'#43e35a','center',900);
+  if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000));txt(s<=1?'Going… going…':`Going in ${s}`,540,950,72,'#fff','center',900)}}
+ else if(!speaking)txt(`${N(open1())} to bid first`,540,860,72,'#fff','center',900)}
 function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
  ctx.fillStyle='rgba(0,0,0,.78)';rr(90,760,900,440,30);ctx.fill();txt(t,540,900,120,'#f5e663','center',840);
  txt(`${N(0)}: ${r.f(a)}`,540,1005,64,'#fff','center',820);txt(`${N(1)}: ${r.f(b)}`,540,1090,64,'#fff','center',820);txt(r.sub,540,1160,40,'#9fe8ad','center',820)}
-function draw(){try{bg();const q=mode==='quiz',C=CATS[$('cat').value];
+function draw(){try{tick();bg();const q=mode==='quiz',C=CATS[$('cat').value];
  if(q){const club=$('club').value,L=S.last&&S.last.p;txt(`BUILD THE 5 ${C.t}`,540,150,92,'#f5e663','center',1040);
   txt(`(${club==='ANY'?'Any club':CLUB[club][0]} players, first to say it!)`,540,235,52,'#fff','center',1000);
   card(L,L?C.f(C.v(L)):'',S.done?'Full time':L?L.n:'Say a name!')}
  else{txt('MUTED FOOTBALLER DRAFT',540,150,92,'#f5e663','center',1040);txt('(Highest Bid Takes It!)',540,235,60,'#fff','center');
-  card(S.cur,S.cur?'$'+(Math.round(+$('amt').value)||0):'',S.done?'Full time':S.cur?S.cur.n:'Next player…')}
+  const a=S.lead?S.lead.amt:Math.round(+$('amt').value)||0;card(S.cur,S.cur&&(S.lead||a>1)?'$'+a:'',S.done?'Full time':S.cur?S.cur.n:'Next player…');auctionInfo()}
  const R=q?result():null,val=i=>q?C.f(R.s[i]):'$'+S.money[i],y=1330;
  const w0=txt(N(0),20,y,100,'#fff','left',300);ctx.fillStyle='#fff';ctx.fillRect(20,y+18,w0,8);txt(val(0),20+w0+22,y,100,'#43e35a','left',498-w0);
  const wv=txt(val(1),1060,y,100,'#43e35a','right',220),w1=txt(N(1),1060-wv-22,y,100,'#fff','right',280);ctx.fillStyle='#fff';ctx.fillRect(1060-wv-22-w1,y+18,w1,8);
- team(0,q,C);team(1,q,C);if(S.done)winner()}catch(e){}
+ team(0,q,C);team(1,q,C);flyer();if(S.done&&!anim)winner()}catch(e){}
  requestAnimationFrame(draw)}
 
 /* ---------- camera + recording ---------- */
@@ -459,7 +526,9 @@ $('tBid').onclick=()=>{mode='bid';fresh()};$('tQuiz').onclick=()=>{mode='quiz';f
 ['budget','pool','cat','club'].forEach(id=>$(id).addEventListener('change',fresh));
 ['n0','n1'].forEach(id=>{try{const v=localStorage.getItem('fd-'+id);if(v)$(id).value=v}catch(e){}
  $(id).addEventListener('input',()=>{try{localStorage.setItem('fd-'+id,$(id).value)}catch(e){}ui()})});
-$('nextBtn').onclick=nextPlayer;$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
+$('nextBtn').onclick=nextPlayer;
+$('voiceBtn').onclick=()=>{if(mode!=='bid'){mode='bid';fresh()}if(S.done)fresh();listen();if(!S.cur)nextPlayer();else announce()};
+cv.addEventListener('pointerdown',e=>{if(mode!=='bid'||!S.cur)return;const r=cv.getBoundingClientRect();bid(e.clientX-r.left<r.width/2?0:1,(S.lead?S.lead.amt:0)+1,'tap')});$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
 $('sell0').onclick=()=>sell(0);$('sell1').onclick=()=>sell(1);$('q0').onclick=()=>pick(0);$('q1').onclick=()=>pick(1);
 $('plus').onclick=()=>{$('amt').value=(Math.round(+$('amt').value)||0)+1};$('minus').onclick=()=>{$('amt').value=Math.max(1,(Math.round(+$('amt').value)||1)-1)};
 $('slots').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k===undefined)return;if(k==='x'){S.pending=null;ui();return}place(+k)};
