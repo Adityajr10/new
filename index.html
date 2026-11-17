@@ -60,6 +60,8 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <button id="undoBtn">Undo</button>
   <button id="newBtn">New game</button>
  </div>
+ <label class="chk" style="margin-top:10px"><input type="checkbox" id="recSound" checked> Record sound too</label>
+ <p class="note">If voice bids stop working while recording on your phone, untick this.</p>
  <p class="msg" id="camMsg"></p>
  <div id="out" class="hide"><video id="prev" controls playsinline></video><a id="dl" class="dl" download>Save the video</a></div>
 </div>
@@ -78,7 +80,8 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
  <section class="card" id="pBid"><h2>Auction desk</h2>
   <div class="bar" style="margin-top:0"><button class="go" id="voiceBtn">Start voice game</button><button id="nextBtn">Next player</button></div>
   <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>8</option></select></div></div>
-  <p class="note" id="micNote">Just say the number, like "3" or "3 dollars". Each new bid goes to the other player, so you don't need to say your name, but you can ("Tom 5"). No mic? Tap your half of the stage to raise the bid by $1.</p>
+  <label class="chk" style="margin:4px 0 6px"><input type="checkbox" id="tapBid"> Tap the stage to bid (left half = Player 1, right half = Player 2)</label>
+  <p class="note" id="micNote">Just say the number, like "3" or "3 dollars". Each new bid goes to the other player, so you don't need to say your name, but you can ("Tom 5").</p>
   <div class="row" style="margin-top:12px"><div><label for="custom">Or auction a player you choose</label><input id="custom" list="names" placeholder="Type a name" autocomplete="off"></div><div style="align-self:end"><button id="customBtn" style="width:100%">Put up for auction</button></div></div>
   <label for="amt">Winning bid ($)</label>
   <div class="amt"><button id="minus" aria-label="Lower bid">−</button><input id="amt" type="number" min="1" value="1" inputmode="numeric"><button id="plus" aria-label="Raise bid">+</button></div>
@@ -816,11 +819,12 @@ let speaking=false,muteUntil=0,listening=false,recog=null,endAt=0,noBidAt=0,auto
 const POSN=p=>p==='?'?'':({GK:'goalkeeper',CB:'defender',LB:'defender',RB:'defender',CM:'midfielder',AM:'midfielder',RM:'midfielder'})[p]||'forward';
 const auto=()=>$('auto').checked;
 const open1=()=>{const f=[0,1].filter(i=>canTake(i,S.cur));return f.length===1?f[0]:(S.shown.length%2?0:1)};
-function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+1100;if(cb)cb()};
+let lastSaid=new Set();
+function speak(t,cb){let done=false;if(t)lastSaid=new Set(norm(t).split(' '));const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+1500;if(cb)cb()};
  const ss=window.speechSynthesis;if(!ss||!t){setTimeout(fin,300);return}
  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;u.onend=fin;u.onerror=fin;speaking=true;ss.cancel();ss.speak(u)}catch(e){fin();return}
  setTimeout(fin,1800+t.length*90)}
-function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=!p.kind?POSN(p.pos):p.kind==='movie'?`${p.info} movie${p.y?', '+p.y:''}`:p.kind==='series'?`${p.info} web series`:'WWE superstar';
+function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=!p.kind?POSN(p.pos):p.kind==='movie'?`${p.info} movie`:p.kind==='series'?`${p.info} web series`:'WWE superstar';
  say(`${p.n} is up. ${N(o)} bids first.`);
  speak(`${p.n}${pn?', '+pn:''}. ${N(o)} to bid first.`,()=>{noBidAt=Date.now()+4000})}
 function bid(i,amt,src){if(mode!=='bid'||S.done||!S.cur||S.pending)return;
@@ -841,25 +845,28 @@ function tick(){const t=Date.now();if(mode!=='bid'||S.done||!S.cur||S.pending||s
  else if(auto()&&!S.lead&&noBidAt&&t>noBidAt){noBidAt=0;const p=S.cur;snap();S.cur=null;ui();say(`No bids for ${p.n}.`);speak(`No bids for ${p.n}. Next player.`,()=>{autoT=setTimeout(nextPlayer,600)})}}
 const W2N={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90,hundred:100};
 const SOFT={won:1,ek:1,to:2,too:2,tu:2,do:2,dho:2,tree:3,free:3,tri:3,teen:3,tin:3,for:4,fore:4,char:4,chaar:4,fiv:5,fife:5,paanch:5,panch:5,pach:5,sex:6,chhe:6,che:6,saat:7,sat:7,ate:8,aath:8,nein:9,nau:9,tan:10,das:10,dus:10,gyarah:11,barah:12};
-function parseBid(w){let amt=null,who=null;
+const ALONE=new Set(['ek','teen','char','chaar','paanch','panch','chhe','saat','aath','nau','das','dus','gyarah','barah']);
+function parseBids(w){const out=[];let who=null;
  for(let j=0;j<w.length;j++){const x=w[j],nx=w[j+1]||'';let n=null;
+  for(const i of[0,1]){const k=norm(N(i)).split(' ')[0];if(k&&x===k)who=i}
   if(/^\d+$/.test(x))n=+x;else if(W2N[x]!==undefined){n=W2N[x];if(n>=20&&n<100&&n%10===0&&W2N[nx]<10){n+=W2N[nx];j++}}
-  else if(SOFT[x]&&(w.length<=3||/^(dollar|buck|rupee|rs)/.test(nx)))n=SOFT[x];
-  if(n!==null&&n>0&&n<=1000)amt=n}
- for(const i of[0,1]){const k=norm(N(i)).split(' ')[0];if(k&&w.includes(k))who=i}
- return amt?{amt,who}:null}
+  else if(SOFT[x]&&(ALONE.has(x)||/^(dollar|buck|rupee|rs)/.test(nx)))n=SOFT[x];
+  if(n!==null&&n>0&&n<=1000){out.push({amt:n,who});who=null}}
+ return out}
+function isEcho(w){if(!w.length)return false;const hit=w.filter(x=>lastSaid.has(x)).length;return w.length>=2&&hit/w.length>=.6}
 function run(idx,alts){const ws=alts.map(t=>norm(t.replace(/\$/g,' ')).split(' ').filter(Boolean)),from=Math.min(used[idx]||0,ws[0].length);used[idx]=ws[0].length;
- if(speaking||Date.now()<muteUntil||mode!=='bid'||!S.cur||S.pending)return;
- let b=null;for(const w of ws){b=parseBid(w.slice(Math.min(from,w.length)));if(b)break}if(!b)return;
- let i=b.who;if(i===null||i===undefined)i=S.lead?1-S.lead.i:open1();bid(i,b.amt,'voice')}
+ const fresh0=ws[0].slice(from);if(fresh0.length&&mode==='bid')$('micNote').textContent=`Heard: "${fresh0.join(' ')}"`;
+ if(speaking||Date.now()<muteUntil||mode!=='bid'||!S.cur||S.pending)return;if(isEcho(fresh0))return;
+ let bs=[];for(const w of ws){bs=parseBids(w.slice(Math.min(from,w.length)));if(bs.length)break}
+ for(const b of bs){let i=b.who;if(i===null||i===undefined)i=S.lead?1-S.lead.i:open1();bid(i,b.amt,'voice')}}
 function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){$('micNote').textContent='This browser can\'t listen for bids. Tap your half of the stage to raise the bid by $1, or use the buttons below.';return}
- if(listening)return;listening=true;recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;recog.maxAlternatives=4;
+ if(!SR){$('micNote').textContent='This browser can\'t listen for bids. Turn on "Tap the stage to bid", or use the buttons below.';return}
+ if(listening)return;listening=true;const me=recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;recog.maxAlternatives=4;
  recog.onstart=()=>{for(const k in used)delete used[k]};
  recog.onresult=e=>{if(endAt&&!speaking)endAt=Math.max(endAt,Date.now()+2500);const idx=e.results.length-1,r=e.results[idx],alts=[...r].map(a=>a.transcript),go=mode==='quiz'?runQuiz:run;clearTimeout(deb);if(r.isFinal)go(idx,alts);else deb=setTimeout(()=>go(idx,alts),mode==='quiz'?900:600)};
- recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){listening=false;$('micNote').textContent='The microphone is blocked, so voice bids are off. Tap your half of the stage to raise the bid by $1.'}};
- recog.onend=()=>{if(listening)setTimeout(()=>{try{recog.start()}catch(e){}},250)};
- try{recog.start();$('micNote').textContent=`Listening. Just say the number: "2", "3 dollars"… Each new bid goes to the other player. Raising your own bid? Add your name ("${N(1)} 5"). Or tap your half of the stage to raise by $1.`}catch(e){listening=false}}
+ recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){listening=false;$('micNote').textContent='The microphone is blocked, so voice bids are off. Turn on "Tap the stage to bid" instead.'}};
+ recog.onend=()=>{if(listening&&recog===me)setTimeout(()=>{if(listening&&recog===me)try{me.start()}catch(e){}},250)};
+ try{recog.start();$('micNote').textContent=`Listening. Just say the number: "2", "3 dollars"… Each new bid goes to the other player. Raising your own bid? Add your name ("${N(1)} 5").`}catch(e){listening=false}}
 
 function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:bcat()==='fb'?'Total team rating':'Total score'};
  const C=CATS[$('cat').value];return{s:S.quiz.map(t=>t.reduce((a,p)=>a+C.v(p),0)),f:C.f,hi:C.hi,sub:C.sub}}
@@ -963,18 +970,23 @@ function draw(){try{tick();bg();const q=mode==='quiz',C=CATS[$('cat').value];
 
 /* ---------- camera + recording ---------- */
 function camNo(){$('camMsg').textContent="The camera is blocked in this view. Open the game file from a normal web link in Safari or Chrome to film yourselves, or use your phone's screen recording."}
+let mic=null;
 async function cam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;$('camBtn').textContent='Start camera';return}
  const md=navigator.mediaDevices;if(!md||!md.getUserMedia)return camNo();
- try{stream=await md.getUserMedia({video:{facingMode:'user'},audio:true})}catch(e){try{stream=await md.getUserMedia({video:{facingMode:'user'}})}catch(e2){stream=null;return camNo()}}
- vid.srcObject=stream;try{await vid.play()}catch(e){}$('camBtn').textContent='Stop camera';$('camMsg').textContent=stream.getAudioTracks().length?'':'Camera on, without sound.'}
+ const wasL=listening;if(wasL){listening=false;try{recog.abort()}catch(e){}}
+ try{stream=await md.getUserMedia({video:{facingMode:'user'},audio:false})}
+ catch(e){stream=null;$('camMsg').textContent=e&&e.name==='NotAllowedError'?'Camera permission was refused. In Safari tap "aA" in the address bar → Website Settings → Camera → Allow, then try again.':`The camera could not start (${e&&e.name||'error'}). Close other apps using the camera and try again.`}
+ if(wasL){listening=false;setTimeout(listen,400)}
+ if(!stream)return;vid.srcObject=stream;try{await vid.play()}catch(e){}$('camBtn').textContent='Stop camera';$('camMsg').textContent='Camera on.'}
 let rec=null,chunks=[];
-function record(){if(rec){rec.stop();return}
+async function record(){if(rec){rec.stop();return}
  if(!cv.captureStream||!window.MediaRecorder){$('camMsg').textContent='Recording is not supported in this browser.';return}
  const mt=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
- const ms=new MediaStream([...cv.captureStream(30).getVideoTracks(),...(stream?stream.getAudioTracks():[])]);
+ if($('recSound').checked&&!mic){try{mic=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){mic=null}}
+ const ms=new MediaStream([...cv.captureStream(30).getVideoTracks(),...(mic&&$('recSound').checked?mic.getAudioTracks():[])]);
  try{rec=new MediaRecorder(ms,mt?{mimeType:mt}:{})}catch(e){rec=null;$('camMsg').textContent='Recording could not start here.';return}
  chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
- rec.onstop=()=>{const type=(rec&&rec.mimeType)||mt||'video/webm',u=URL.createObjectURL(new Blob(chunks,{type}));$('prev').src=u;$('dl').href=u;$('dl').download='footballer-draft.'+(type.includes('mp4')?'mp4':'webm');
+ rec.onstop=()=>{if(mic){mic.getTracks().forEach(t=>t.stop());mic=null}const type=(rec&&rec.mimeType)||mt||'video/webm',u=URL.createObjectURL(new Blob(chunks,{type}));$('prev').src=u;$('dl').href=u;$('dl').download='footballer-draft.'+(type.includes('mp4')?'mp4':'webm');
   $('out').classList.remove('hide');rec=null;$('recBtn').textContent='Record';$('camMsg').textContent='Recording finished. Watch it below or tap Save the video.'};
  rec.start(1000);$('recBtn').textContent='Stop recording';$('camMsg').textContent='Recording the stage…'}
 const sayP=t=>{$('msgP').textContent=t};
@@ -997,7 +1009,7 @@ $('nextBtn').onclick=nextPlayer;$('qVoiceBtn').onclick=quizStart;$('randBtn').on
 $('qPass').onclick=()=>{if(S.turn===undefined||S.done)return;const o=1-S.turn;if(S.quiz[o].length<5)S.turn=o;say(`${N(S.turn)}'s turn.`);speak(`${N(S.turn)}, your turn.`)};
 $('qAllow').onclick=()=>{if(S.warn&&S.warn.p)addPick(S.warn.i,S.warn.p,true)};
 $('voiceBtn').onclick=()=>{if(mode!=='bid'){mode='bid';fresh()}if(S.done)fresh();listen();if(!S.cur)nextPlayer();else announce()};
-cv.addEventListener('pointerdown',e=>{if(mode!=='bid'||!S.cur)return;const r=cv.getBoundingClientRect();bid(e.clientX-r.left<r.width/2?0:1,(S.lead?S.lead.amt:0)+1,'tap')});$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
+cv.addEventListener('click',e=>{if(mode!=='bid'||!S.cur||!$('tapBid').checked)return;const r=cv.getBoundingClientRect();bid(e.clientX-r.left<r.width/2?0:1,(S.lead?S.lead.amt:0)+1,'tap')});$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
 $('sell0').onclick=()=>sell(0);$('sell1').onclick=()=>sell(1);$('q0').onclick=()=>pick(0);$('q1').onclick=()=>pick(1);
 $('plus').onclick=()=>{$('amt').value=(Math.round(+$('amt').value)||0)+1};$('minus').onclick=()=>{$('amt').value=Math.max(1,(Math.round(+$('amt').value)||1)-1)};
 $('slots').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k===undefined)return;if(k==='x'){S.pending=null;ui();return}place(+k)};
