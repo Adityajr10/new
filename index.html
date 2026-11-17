@@ -66,7 +66,7 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
 <div class="desk">
  <section class="card"><h2>Game setup</h2>
   <div class="tabs"><button id="tBid" aria-pressed="true">Bid draft</button><button id="tQuiz" aria-pressed="false">Name race</button></div>
-  <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Conor" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Tom" maxlength="12"></div></div>
+  <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Aditya" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Anmol" maxlength="12"></div></div>
   <div id="setBid" class="row"><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
    <div><label for="pool">Players to auction</label><select id="pool"><option value="now">Current stars</option><option value="old">Legends</option><option value="all">Everyone</option></select></div></div>
   <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team</label><select id="club"></select></div></div>
@@ -75,8 +75,8 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
 
  <section class="card" id="pBid"><h2>Auction desk</h2>
   <div class="bar" style="margin-top:0"><button class="go" id="voiceBtn">Start voice game</button><button id="nextBtn">Next player</button></div>
-  <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div></div>
-  <p class="note" id="micNote">Say your bid out loud, like "3 dollars". Bids take turns, so you don't need to say your name, but you can ("Tom 5"). No mic? Tap your half of the stage to raise the bid by $1.</p>
+  <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option></select></div></div>
+  <p class="note" id="micNote">Just say the number, like "3" or "3 dollars". Each new bid goes to the other player, so you don't need to say your name, but you can ("Tom 5"). No mic? Tap your half of the stage to raise the bid by $1.</p>
   <div class="row" style="margin-top:12px"><div><label for="custom">Or auction a player you choose</label><input id="custom" list="names" placeholder="Type a name" autocomplete="off"></div><div style="align-self:end"><button id="customBtn" style="width:100%">Put up for auction</button></div></div>
   <label for="amt">Winning bid ($)</label>
   <div class="amt"><button id="minus" aria-label="Lower bid">−</button><input id="amt" type="number" min="1" value="1" inputmode="numeric"><button id="plus" aria-label="Raise bid">+</button></div>
@@ -86,7 +86,7 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <details><summary>Secret bids: each types a bid without the other looking</summary>
    <div class="row" style="margin-top:8px"><div><label for="sb0" id="sbl0">Conor's bid</label><input id="sb0" type="password" inputmode="numeric"></div><div><label for="sb1" id="sbl1">Tom's bid</label><input id="sb1" type="password" inputmode="numeric"></div></div>
    <button class="go" id="reveal">Reveal bids</button></details>
-  <label for="photo" style="margin-top:14px">Photo for the player on the card (optional)</label><input id="photo" type="file" accept="image/*">
+  <label for="photo" style="margin-top:14px">Add a photo of the player on the card (saved for next time)</label><input id="photo" type="file" accept="image/*">
   <p class="msg" id="msgB" role="status"></p>
  </section>
 
@@ -94,7 +94,7 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <label for="qn">Name that was said</label><input id="qn" list="names" placeholder="e.g. Courtois" autocomplete="off">
   <div id="qvRow" class="hide" style="margin-top:10px"><label for="qv" id="qvl">Height (cm)</label><input id="qv" type="number" inputmode="numeric"></div>
   <div class="row" style="margin-top:10px"><button class="buy" id="q0">Conor said it first</button><button class="buy" id="q1">Tom said it first</button></div>
-  <label for="photo2">Photo for the last pick (optional)</label><input id="photo2" type="file" accept="image/*">
+  <label for="photo2">Add a photo of the last pick (saved for next time)</label><input id="photo2" type="file" accept="image/*">
   <p class="msg" id="msgQ" role="status"></p>
  </section>
 
@@ -335,6 +335,7 @@ const HOWB=`<p>Tap <b>Start voice game</b> and allow the microphone. The game re
 const HOWQ=`<p>Pick a challenge and a team, for example the 5 tallest Real Madrid players. Both shout a name at the same time. The host types it and taps whoever said it first.</p><p>If you both said the same player, the slower one has to name someone else. Once both have 5, the totals are added up and the winner appears on screen.</p>`;
 
 let mode='bid',S;const photos={};
+function getPh(n){if(n in photos)return photos[n];photos[n]=null;try{const d=localStorage.getItem('fd-ph-'+norm(n));if(d){const im=new Image();im.onload=()=>{photos[n]=im};im.src=d}}catch(e){}return null}
 const N=i=>($('n'+i).value.trim()||'Player '+(i+1));
 const say=t=>{$(mode==='quiz'?'msgQ':'msgB').textContent=t};
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -414,26 +415,26 @@ function tick(){const t=Date.now();if(mode!=='bid'||S.done||!S.cur||S.pending||s
  if(endAt&&t>=endAt){endAt=0;if(S.lead)autoSell()}
  else if(auto()&&!S.lead&&noBidAt&&t>noBidAt){noBidAt=0;const p=S.cur;snap();S.cur=null;ui();say(`No bids for ${p.n}.`);speak(`No bids for ${p.n}. Next player.`,()=>{autoT=setTimeout(nextPlayer,600)})}}
 const W2N={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90,hundred:100};
-const SOFT={to:2,too:2,tu:2,for:4,fore:4,won:1,ek:1,do:2,teen:3,char:4,chaar:4,paanch:5,panch:5,chhe:6,che:6,saat:7,aath:8,nau:9,das:10};
+const SOFT={won:1,ek:1,to:2,too:2,tu:2,do:2,dho:2,tree:3,free:3,tri:3,teen:3,tin:3,for:4,fore:4,char:4,chaar:4,fiv:5,fife:5,paanch:5,panch:5,pach:5,sex:6,chhe:6,che:6,saat:7,sat:7,ate:8,aath:8,nein:9,nau:9,tan:10,das:10,dus:10,gyarah:11,barah:12};
 function parseBid(w){let amt=null,who=null;
  for(let j=0;j<w.length;j++){const x=w[j],nx=w[j+1]||'';let n=null;
   if(/^\d+$/.test(x))n=+x;else if(W2N[x]!==undefined){n=W2N[x];if(n>=20&&n<100&&n%10===0&&W2N[nx]<10){n+=W2N[nx];j++}}
-  else if(SOFT[x]&&/^(dollar|buck|rupee|rs)/.test(nx))n=SOFT[x];
+  else if(SOFT[x]&&(w.length<=3||/^(dollar|buck|rupee|rs)/.test(nx)))n=SOFT[x];
   if(n!==null&&n>0&&n<=1000)amt=n}
  for(const i of[0,1]){const k=norm(N(i)).split(' ')[0];if(k&&w.includes(k))who=i}
  return amt?{amt,who}:null}
-function run(idx,text){const w=norm(text).split(' ').filter(Boolean),from=Math.min(used[idx]||0,w.length);used[idx]=w.length;
+function run(idx,alts){const ws=alts.map(t=>norm(t.replace(/\$/g,' ')).split(' ').filter(Boolean)),from=Math.min(used[idx]||0,ws[0].length);used[idx]=ws[0].length;
  if(speaking||Date.now()<muteUntil||mode!=='bid'||!S.cur||S.pending)return;
- const b=parseBid(w.slice(from));if(!b)return;
+ let b=null;for(const w of ws){b=parseBid(w.slice(Math.min(from,w.length)));if(b)break}if(!b)return;
  let i=b.who;if(i===null||i===undefined)i=S.lead?1-S.lead.i:open1();bid(i,b.amt,'voice')}
 function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){$('micNote').textContent='This browser can\'t listen for bids. Tap your half of the stage to raise the bid by $1, or use the buttons below.';return}
- if(listening)return;listening=true;recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;
+ if(listening)return;listening=true;recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;recog.maxAlternatives=4;
  recog.onstart=()=>{for(const k in used)delete used[k]};
- recog.onresult=e=>{const idx=e.results.length-1,r=e.results[idx],t=r[0].transcript;clearTimeout(deb);if(r.isFinal)run(idx,t);else deb=setTimeout(()=>run(idx,t),700)};
+ recog.onresult=e=>{if(endAt&&!speaking)endAt=Math.max(endAt,Date.now()+2500);const idx=e.results.length-1,r=e.results[idx],alts=[...r].map(a=>a.transcript);clearTimeout(deb);if(r.isFinal)run(idx,alts);else deb=setTimeout(()=>run(idx,alts),600)};
  recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){listening=false;$('micNote').textContent='The microphone is blocked, so voice bids are off. Tap your half of the stage to raise the bid by $1.'}};
  recog.onend=()=>{if(listening)setTimeout(()=>{try{recog.start()}catch(e){}},250)};
- try{recog.start();$('micNote').textContent='Listening for bids. Say "2 dollars", "3 dollars"… You can add your name ("Tom 5"). Tap your half of the stage to raise by $1.'}catch(e){listening=false}}
+ try{recog.start();$('micNote').textContent=`Listening. Just say the number: "2", "3 dollars"… Each new bid goes to the other player. Raising your own bid? Add your name ("${N(1)} 5"). Or tap your half of the stage to raise by $1.`}catch(e){listening=false}}
 
 function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:'Total team rating'};
  const C=CATS[$('cat').value];return{s:S.quiz.map(t=>t.reduce((a,p)=>a+C.v(p),0)),f:C.f,hi:C.hi,sub:C.sub}}
@@ -462,15 +463,19 @@ function bg(){if(stream&&vid.readyState>=2&&vid.videoWidth){const vw=vid.videoWi
  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#17402a');g.addColorStop(1,'#06120b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
  ctx.fillStyle='rgba(255,255,255,.035)';for(let i=0;i<12;i+=2)ctx.fillRect(0,i*H/12,W,H/12);
  ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(W/2,1060,170,0,7);ctx.moveTo(0,1060);ctx.lineTo(W,1060);ctx.stroke()}
-function card(p,tag,cap){const x=380,y=290,w=320,h=330,ph=p&&photos[p.n];ctx.save();rr(x,y,w,h,18);ctx.clip();
+function card(p,tag,cap){const x=380,y=290,w=320,h=330,ph=p&&getPh(p.n);ctx.save();rr(x,y,w,h,18);ctx.clip();
  if(ph){const sc=Math.max(w/ph.width,h/ph.height);ctx.drawImage(ph,x+(w-ph.width*sc)/2,y+(h-ph.height*sc)/2,ph.width*sc,ph.height*sc)}
  else{const cc=p?p.c.filter(k=>CLUB[k]).slice(-1)[0]:null,g=ctx.createLinearGradient(x,y,x,y+h);g.addColorStop(0,cc?CLUB[cc][1]:'#2f4a3a');g.addColorStop(1,'#080d0a');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
-  ctx.fillStyle='rgba(255,255,255,.10)';ctx.beginPath();ctx.arc(x+w/2,y+h+40,150,Math.PI,0);ctx.fill();ctx.beginPath();ctx.arc(x+w/2,y+h*.5,72,0,7);ctx.fill();
-  txt(p?p.n.split(' ').map(s=>s[0]).slice(0,2).join(''):'?',x+w/2,y+h*.42,p?110:170,'#fff','center',w-40)}
+  if(p){const c=x+w/2,t=y+68,kc=cc?CLUB[cc][1]:'#3d6b52';ctx.beginPath();ctx.moveTo(c-52,t);ctx.lineTo(c-100,t+16);ctx.lineTo(c-148,t+72);ctx.lineTo(c-118,t+106);ctx.lineTo(c-94,t+86);ctx.lineTo(c-94,t+215);
+   ctx.lineTo(c+94,t+215);ctx.lineTo(c+94,t+86);ctx.lineTo(c+118,t+106);ctx.lineTo(c+148,t+72);ctx.lineTo(c+100,t+16);ctx.lineTo(c+52,t);ctx.quadraticCurveTo(c,t+46,c-52,t);ctx.closePath();
+   const jg=ctx.createLinearGradient(c-148,t,c+148,t+215);jg.addColorStop(0,kc);jg.addColorStop(.55,kc);jg.addColorStop(1,'rgba(0,0,0,.55)');ctx.fillStyle=jg;ctx.fill();
+   ctx.lineWidth=7;ctx.strokeStyle='rgba(255,255,255,.92)';ctx.stroke();txt(p.n.split(' ').map(s=>s[0]).slice(0,2).join(''),c,t+128,66,'#fff','center',160);
+   txt(p.pos==='?'?'':p.pos,c,y+34,30,'#fff','center',200)}
+  else txt('?',x+w/2,y+h*.62,170,'#fff','center',w-40)}
  ctx.restore();ctx.lineWidth=6;ctx.strokeStyle='rgba(255,255,255,.9)';rr(x,y,w,h,18);ctx.stroke();
- if(tag)txt(tag,x+w/2,ph?y+h*.62:y+h-36,ph?120:96,'#f5e663','center',w-20);
+ if(tag)txt(tag,x+w/2,ph?y+h*.62:y+h-14,ph?120:84,'#f5e663','center',w-20);
  txt(cap,540,y+h+78,62,'#fff','center',980)}
-function mini(p,cx,cy,r){const ph=photos[p.n];ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.clip();
+function mini(p,cx,cy,r){const ph=getPh(p.n);ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.clip();
  if(ph){const sc=Math.max(2*r/ph.width,2*r/ph.height);ctx.drawImage(ph,cx-ph.width*sc/2,cy-ph.height*sc/2,ph.width*sc,ph.height*sc)}
  else{const cc=p.c.filter(k=>CLUB[k]).slice(-1)[0];ctx.fillStyle=cc?CLUB[cc][1]:'#2f4a3a';ctx.fillRect(cx-r,cy-r,2*r,2*r);txt(p.n.split(' ').map(s=>s[0]).slice(0,2).join(''),cx,cy+r*.36,r*.95,'#fff','center',r*1.7)}
  ctx.restore();ctx.lineWidth=Math.max(3,r*.1);ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke()}
@@ -485,7 +490,8 @@ function flyer(){if(!anim)return;const e=(performance.now()-anim.t0)/900;if(e>=1
  const a=ANCH[anim.i][anim.k];if(!a)return;const z=1-Math.pow(1-e,3),x=540+(a.x-540)*z,y=455+(a.y-455)*z,r=150+(30-150)*z;mini(anim.p,x,y,r)}
 function auctionInfo(){if(!S.cur||S.done)return;const now=Date.now();
  if(S.lead){txt(`${N(S.lead.i)} $${S.lead.amt}`,540,840,110,'#43e35a','center',900);
-  if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000));txt(s<=1?'Going… going…':`Going in ${s}`,540,950,72,'#fff','center',900)}}
+  if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000)),o=1-S.lead.i,can=S.teams[o].some(x=>!x.p)&&S.money[o]-(S.teams[o].filter(x=>!x.p).length-1)>S.lead.amt;
+   txt(can?`${N(o)}, go higher? ${s}`:(s<=1?'Going… going…':`Going in ${s}`),540,950,72,'#fff','center',900)}}
  else if(!speaking)txt(`${N(open1())} to bid first`,540,860,72,'#fff','center',900)}
 function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
  ctx.fillStyle='rgba(0,0,0,.78)';rr(90,760,900,440,30);ctx.fill();txt(t,540,900,120,'#f5e663','center',840);
@@ -519,7 +525,9 @@ function record(){if(rec){rec.stop();return}
   $('out').classList.remove('hide');rec=null;$('recBtn').textContent='Record';$('camMsg').textContent='Recording finished. Watch it below or tap Save the video.'};
  rec.start(1000);$('recBtn').textContent='Stop recording';$('camMsg').textContent='Recording the stage…'}
 function photo(e){const f=e.target.files[0],p=mode==='quiz'?S.last&&S.last.p:S.cur;e.target.value='';if(!f)return;if(!p)return say('Put a player on the card first');
- const img=new Image();img.onload=()=>{photos[p.n]=img};img.src=URL.createObjectURL(f)}
+ const img=new Image();img.onload=()=>{const sc=Math.min(1,360/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  const d=c.toDataURL('image/jpeg',.82),im=new Image();im.onload=()=>{photos[p.n]=im};im.src=d;try{localStorage.setItem('fd-ph-'+norm(p.n),d);say(`Photo saved for ${p.n}.`)}catch(x){say('Photo added for this game (phone storage is full, so it won\'t be kept).')}};
+ img.src=URL.createObjectURL(f)}
 
 /* ---------- wiring ---------- */
 $('tBid').onclick=()=>{mode='bid';fresh()};$('tQuiz').onclick=()=>{mode='quiz';fresh()};
