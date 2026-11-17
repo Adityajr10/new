@@ -69,7 +69,7 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <div class="tabs"><button id="tBid" aria-pressed="true">Bid draft</button><button id="tQuiz" aria-pressed="false">Name race</button></div>
   <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Aditya" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Anmol" maxlength="12"></div></div>
   <div id="setBid" class="row"><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
-   <div><label for="pool">Players to auction</label><select id="pool"><option value="now">Current stars</option><option value="old">Legends</option><option value="all">Everyone</option></select></div></div>
+   <div><label for="pool">Auction mode</label><select id="pool"><option value="stars">Quality: superstars only</option><option value="all">Normal: all players</option></select></div></div>
   <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team or country</label><select id="club"></select></div></div>
   <button class="go" id="randBtn" style="margin-bottom:10px">Random challenge</button>
   <p class="note">Changing the mode, budget, pool, challenge or team starts a new game.</p>
@@ -576,7 +576,7 @@ function snap(){S.hist.push(JSON.stringify(KEYS.reduce((o,k)=>(o[k]=S[k],o),{}))
 function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');clearTimeout(autoT);endAt=0;anim=null;Object.assign(S,JSON.parse(h));S.pending=null;S.lead=null;S.warn=null;ui();say('Undone')}
 
 function nextPlayer(){if(S.done)return;const pool=$('pool').value;
- let ps=DB.filter(p=>(pool==='all'||(pool==='old')===p.L)&&!S.shown.includes(p.n));
+ let ps=DB.filter(p=>(pool==='stars'?p.r>=89:true)&&!S.shown.includes(p.n));
  const need=new Set();S.teams.forEach(t=>t.forEach(s=>{if(!s.p)need.add(s.pos)}));
  const pref=ps.filter(p=>need.has(grp(p.pos)));if(pref.length)ps=pref;
  if(!ps.length)return say('No players left in this pool. Switch the pool or type a name.');
@@ -654,7 +654,7 @@ function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;spea
  setTimeout(fin,1800+t.length*90)}
 function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=POSN(p.pos);
  say(`${p.n} is up. ${N(o)} bids first.`);
- speak(`${p.n}${pn?', '+pn:''}. ${N(o)} to bid first.`,()=>{noBidAt=Date.now()+15000})}
+ speak(`${p.n}${pn?', '+pn:''}. ${N(o)} to bid first.`,()=>{noBidAt=Date.now()+4000})}
 function bid(i,amt,src){if(mode!=='bid'||S.done||!S.cur||S.pending)return;
  if(S.teams[i].every(s=>s.p)){i=1-i;if(S.teams[i].every(s=>s.p))return}
  const cur=S.lead?S.lead.amt:0;if(!(amt>cur))return say(`Heard $${amt}, but the bid is already $${cur}. Go higher.`);
@@ -760,7 +760,7 @@ function auctionInfo(){if(!S.cur||S.done)return;const now=Date.now();
  if(S.lead){txt(`${N(S.lead.i)} $${S.lead.amt}`,540,905,96,'#43e35a','center',900);
   if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000)),o=1-S.lead.i,can=S.teams[o].some(x=>!x.p)&&S.money[o]-(S.teams[o].filter(x=>!x.p).length-1)>S.lead.amt;
    txt(can?`${N(o)}, go higher? ${s}`:(s<=1?'Going… going…':`Going in ${s}`),540,1000,66,'#fff','center',900)}}
- else if(!speaking)txt(`${N(open1())} to bid first`,540,930,72,'#fff','center',900)}
+ else if(!speaking){const nb=noBidAt?Math.max(0,Math.ceil((noBidAt-Date.now())/1000)):0;txt(`${N(open1())} to bid first`,540,910,72,'#fff','center',900);if(nb&&auto())txt(`No bid? Gone in ${nb}`,540,1000,58,'#ffb3b3','center',900)}}
 function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
  ctx.fillStyle='rgba(0,0,0,.8)';rr(90,830,900,400,30);ctx.fill();txt(t,540,960,116,'#f5e663','center',840);
  txt(`${N(0)}: ${r.f(a)}`,540,1050,60,'#fff','center',820);txt(`${N(1)}: ${r.f(b)}`,540,1125,60,'#fff','center',820);txt(r.sub,540,1190,38,'#9fe8ad','center',820)}
