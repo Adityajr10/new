@@ -77,7 +77,7 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
 
  <section class="card" id="pBid"><h2>Auction desk</h2>
   <div class="bar" style="margin-top:0"><button class="go" id="voiceBtn">Start voice game</button><button id="nextBtn">Next player</button></div>
-  <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option></select></div></div>
+  <div class="row" style="margin-top:12px;align-items:end"><label class="chk"><input type="checkbox" id="auto" checked> Auto host: sells after the countdown and brings the next player</label><div><label for="cd">Countdown (seconds)</label><select id="cd"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>8</option></select></div></div>
   <p class="note" id="micNote">Just say the number, like "3" or "3 dollars". Each new bid goes to the other player, so you don't need to say your name, but you can ("Tom 5"). No mic? Tap your half of the stage to raise the bid by $1.</p>
   <div class="row" style="margin-top:12px"><div><label for="custom">Or auction a player you choose</label><input id="custom" list="names" placeholder="Type a name" autocomplete="off"></div><div style="align-self:end"><button id="customBtn" style="width:100%">Put up for auction</button></div></div>
   <label for="amt">Winning bid ($)</label>
@@ -329,11 +329,215 @@ Antoine Griezmann|FW|176|87|1991|ATM BAR||FRA|0|0|1
 Jan Oblak|GK|188|87|1993|ATM||SVN|0|0|0
 Julián Álvarez|ST|170|87|2000|MCI ATM||ARG|1|0|1
 Koke|CM|176|83|1992|ATM||ESP|0|0|0
-Pelé|FW|173|98|1940|SAN|L|BRA|0|0|3`;
+Pelé|FW|173|98|1940|SAN|L|BRA|0|0|3
+Memphis Depay|FW|176|82|1994|PSV MUN LYO BAR ATM COR||NED|0|0|0
+Jesse Lingard|AM|175|76|1992|MUN||ENG|0|0|0
+Juan Mata|AM|170|82|1988|CHE MUN||ESP|1|0|1
+Ander Herrera|CM|182|80|1989|MUN PSG||ESP|0|0|0
+Fred|CM|169|80|1993|MUN||BRA|0|0|0
+Anthony Martial|FW|181|81|1995|MON MUN||FRA|0|0|0
+David de Gea|GK|192|87|1990|ATM MUN||ESP|0|0|0
+Mason Mount|AM|181|80|1999|CHE MUN||ENG|1|0|0
+Antony|RW|172|78|2000|AJA MUN||BRA|0|0|0
+Alejandro Garnacho|LW|180|80|2004|MUN CHE||ARG|0|0|0
+Diogo Dalot|RB|183|80|1999|POR MUN MIL||POR|0|0|0
+Luke Shaw|LB|181|81|1995|MUN||ENG|0|0|0
+Victor Lindelöf|CB|187|78|1994|MUN||SWE|0|0|0
+Christian Eriksen|CM|182|84|1992|AJA TOT INT MUN||DEN|0|0|0
+Matthijs de Ligt|CB|189|83|1999|AJA JUV BAY MUN||NED|0|0|0
+Amad Diallo|RW|173|80|2002|MUN||CIV|0|0|0
+Rasmus Højlund|ST|191|78|2003|MUN NAP||DEN|0|0|0
+Nemanja Matić|CM|194|80|1988|CHE MUN ROM||SRB|0|0|0
+Ángel Di María|RW|180|87|1988|RMA MUN PSG JUV||ARG|1|0|1
+Radamel Falcao|ST|177|86|1986|ATM MON MUN CHE|L|COL|0|0|0
+Javier Hernández|ST|175|80|1988|MUN RMA||MEX|0|0|0
+Dimitar Berbatov|ST|188|84|1981|TOT MUN|L|BUL|0|0|0
+Carlos Tevez|ST|173|86|1984|MUN MCI JUV|L|ARG|1|0|0
+Park Ji-sung|CM|175|82|1981|MUN|L|KOR|1|0|0
+Michael Carrick|CM|188|84|1981|TOT MUN|L|ENG|1|0|0
+Patrice Evra|LB|175|85|1981|MON MUN JUV|L|FRA|1|0|0
+Gary Neville|RB|180|84|1975|MUN|L|ENG|1|0|0
+Ruud van Nistelrooy|ST|188|89|1976|MUN RMA|L|NED|0|0|0
+Andy Cole|ST|178|84|1971|MUN|L|ENG|1|0|0
+Dwight Yorke|ST|178|84|1971|MUN|L|TRI|1|0|0
+Ole Gunnar Solskjær|ST|178|82|1973|MUN|L|NOR|1|0|0
+Denis Law|ST|175|90|1940|MCI MUN|L|SCO|0|1|0
+Bobby Charlton|AM|173|92|1937|MUN|L|ENG|1|1|1
+George Best|LW|175|93|1946|MUN|L|NIR|1|1|0
+Bryan Robson|CM|177|86|1957|MUN|L|ENG|0|0|0
+Nani|RW|175|82|1986|MUN|L|POR|1|0|0
+Jaap Stam|CB|191|87|1972|MUN MIL|L|NED|1|0|0
+Antonio Valencia|RB|180|82|1985|MUN|L|ECU|0|0|0
+Edinson Cavani|ST|184|86|1987|NAP PSG MUN||URU|0|0|0
+Leny Yoro|CB|190|78|2005|MUN||FRA|0|0|0
+Riyad Mahrez|RW|179|85|1991|LEI MCI||ALG|1|0|0
+Raheem Sterling|LW|172|84|1994|LIV MCI CHE ARS||ENG|0|0|0
+Leroy Sané|LW|183|85|1996|MCI BAY||GER|0|0|0
+João Cancelo|RB|182|85|1994|JUV MCI BAY BAR||POR|0|0|0
+Aymeric Laporte|CB|189|84|1994|MCI||ESP|0|0|1
+Fernandinho|CM|179|85|1985|MCI|L|BRA|0|0|0
+İlkay Gündoğan|CM|180|86|1990|DOR MCI BAR||GER|1|0|0
+Kalvin Phillips|CM|178|76|1995|MCI||ENG|1|0|0
+Manuel Akanji|CB|188|83|1995|DOR MCI INT||SUI|1|0|0
+Nathan Aké|CB|180|81|1995|CHE MCI||NED|1|0|0
+Joe Hart|GK|196|83|1987|MCI|L|ENG|0|0|0
+Edin Džeko|ST|193|85|1986|MCI ROM INT||BIH|0|0|0
+Samir Nasri|AM|175|83|1987|ARS MCI|L|FRA|0|0|0
+Pablo Zabaleta|RB|176|82|1985|MCI|L|ARG|0|0|0
+Gabriel Jesus|ST|175|83|1997|MCI ARS||BRA|0|0|0
+Mario Balotelli|ST|189|82|1990|INT MCI MIL LIV|L|ITA|1|0|0
+Savinho|RW|176|80|2004|MCI||BRA|0|0|0
+Mateo Kovačić|CM|177|84|1994|INT RMA CHE MCI||CRO|4|0|0
+Mesut Özil|AM|180|86|1988|RMA ARS|L|GER|0|0|1
+Xabi Alonso|CM|182|88|1981|LIV RMA BAY|L|ESP|2|0|1
+Isco|AM|176|84|1992|RMA||ESP|5|0|0
+Marco Asensio|AM|182|82|1996|RMA PSG||ESP|3|0|0
+Lucas Vázquez|RW|173|80|1991|RMA||ESP|5|0|0
+Nacho|CB|180|80|1990|RMA||ESP|6|0|0
+Álvaro Morata|ST|190|82|1992|RMA JUV CHE ATM MIL||ESP|2|0|0
+Gonzalo Higuaín|ST|184|86|1987|RMA NAP JUV MIL CHE|L|ARG|0|0|0
+Robinho|FW|172|80|1984|SAN RMA MCI MIL|L|BRA|0|0|0
+Fernando Hierro|CB|187|88|1968|RMA|L|ESP|3|0|0
+Clarence Seedorf|CM|176|88|1976|AJA RMA INT MIL|L|NED|4|0|0
+Steve McManaman|AM|183|84|1972|LIV RMA MCI|L|ENG|2|0|0
+Fernando Morientes|ST|186|84|1976|RMA LIV|L|ESP|3|0|0
+Dani Ceballos|CM|179|78|1996|RMA ARS||ESP|3|0|0
+Kepa Arrizabalaga|GK|186|80|1994|CHE RMA ARS||ESP|2|0|0
+Endrick|ST|173|78|2006|RMA||BRA|0|0|0
+Hugo Sánchez|ST|175|88|1958|ATM RMA|L|MEX|0|0|0
+Paco Gento|LW|172|90|1933|RMA|L|ESP|6|0|0
+Patrick Kluivert|ST|188|86|1976|AJA MIL BAR|L|NED|1|0|0
+Hristo Stoichkov|FW|178|90|1966|BAR|L|BUL|1|1|0
+Ronald Koeman|CB|181|88|1963|AJA BAR|L|NED|2|0|0
+Romário|ST|167|91|1966|BAR|L|BRA|0|0|1
+Pep Guardiola|CM|180|85|1971|BAR|L|ESP|1|0|0
+Deco|AM|174|86|1977|POR BAR CHE|L|POR|2|0|0
+Rafael Márquez|CB|182|85|1979|MON BAR|L|MEX|2|0|0
+Eric Abidal|LB|186|83|1979|LYO BAR|L|FRA|2|0|0
+Pedro|LW|169|84|1987|BAR CHE ROM||ESP|3|0|1
+David Villa|ST|175|88|1981|BAR ATM|L|ESP|1|0|1
+Jordi Alba|LB|170|86|1989|BAR MIA|L|ESP|1|0|0
+Ivan Rakitić|CM|184|85|1988|SEV BAR|L|CRO|1|0|0
+Javier Mascherano|CB|174|86|1984|LIV BAR|L|ARG|2|0|0
+Philippe Coutinho|AM|172|84|1992|INT LIV BAR BAY||BRA|1|0|0
+Ansu Fati|LW|178|78|2002|BAR||ESP|0|0|0
+Andreas Christensen|CB|187|81|1996|CHE BAR||DEN|1|0|0
+Eric García|CB|182|80|2001|MCI BAR||ESP|0|0|1
+Jérôme Boateng|CB|192|86|1988|MCI BAY|L|GER|2|0|1
+David Alaba|LB|180|86|1992|BAY RMA||AUT|4|0|0
+Mario Götze|AM|176|83|1992|DOR BAY||GER|0|0|1
+Leon Goretzka|CM|189|84|1995|BAY||GER|1|0|0
+Serge Gnabry|RW|176|84|1995|ARS BAY||GER|1|0|0
+Kingsley Coman|LW|180|84|1996|PSG JUV BAY||FRA|1|0|0
+Javi Martínez|CM|190|83|1988|BAY|L|ESP|2|0|1
+Mario Mandžukić|ST|190|84|1986|BAY ATM JUV MIL|L|CRO|1|0|0
+Thiago Alcântara|CM|174|86|1991|BAR BAY LIV|L|ESP|2|0|0
+Lothar Matthäus|CM|174|91|1961|BAY INT|L|GER|0|1|1
+Gerd Müller|ST|176|93|1945|BAY|L|GER|3|1|1
+Franz Beckenbauer|CB|181|94|1945|BAY|L|GER|3|2|1
+Karl-Heinz Rummenigge|FW|182|90|1955|BAY INT|L|GER|2|2|0
+Michael Ballack|CM|189|88|1976|BAY CHE|L|GER|0|0|0
+Mats Hummels|CB|191|86|1988|BAY DOR ROM|L|GER|0|0|1
+Benjamin Pavard|CB|186|82|1996|BAY INT||FRA|1|0|1
+Lucas Hernández|LB|184|82|1996|ATM BAY PSG||FRA|3|0|1
+Aleksandar Pavlović|CM|188|80|2004|BAY||GER|0|0|0
+Kim Min-jae|CB|190|84|1996|NAP BAY||KOR|0|0|0
+Jonathan Tah|CB|195|83|1996|BAY||GER|0|0|0
+Thiago Silva|CB|181|88|1984|MIL PSG CHE||BRA|1|0|0
+Marco Verratti|CM|165|86|1992|PSG||ITA|0|0|0
+Fabián Ruiz|CM|189|85|1996|NAP PSG||ESP|2|0|1
+Gonçalo Ramos|ST|185|80|2001|POR PSG||POR|2|0|0
+Bradley Barcola|LW|182|83|2002|LYO PSG||FRA|2|0|0
+Warren Zaïre-Emery|CM|178|80|2006|PSG||FRA|2|0|0
+Lucas Beraldo|CB|186|77|2003|PSG||BRA|2|0|0
+Matvey Safonov|GK|192|78|1999|PSG||RUS|2|0|0
+Javier Pastore|AM|187|80|1989|PSG|L|ARG|0|0|0
+Blaise Matuidi|CM|180|82|1987|PSG JUV|L|FRA|0|0|1
+Romelu Lukaku|ST|191|85|1993|CHE EVE MUN INT ROM NAP||BEL|0|0|0
+Michael Essien|CM|178|86|1982|CHE RMA MIL|L|GHA|1|0|0
+Ricardo Carvalho|CB|183|86|1978|POR CHE RMA|L|POR|1|0|0
+Branislav Ivanović|RB|185|83|1984|CHE|L|SRB|1|0|0
+César Azpilicueta|RB|178|84|1989|CHE ATM||ESP|1|0|0
+Gianfranco Zola|FW|168|86|1966|NAP CHE|L|ITA|0|0|0
+Marcel Desailly|CB|185|88|1968|MIL CHE|L|FRA|2|0|1
+Hernán Crespo|ST|184|86|1975|INT CHE MIL|L|ARG|0|0|0
+Nicolas Anelka|ST|185|84|1979|ARS RMA PSG MCI CHE|L|FRA|1|0|0
+Willian|RW|175|83|1988|CHE ARS||BRA|0|0|0
+Jorginho|CM|180|84|1991|NAP CHE ARS||ITA|1|0|0
+Christian Pulisic|RW|177|83|1998|DOR CHE MIL||USA|1|0|0
+Édouard Mendy|GK|194|82|1992|CHE||SEN|1|0|0
+Diego Costa|ST|188|84|1988|ATM CHE|L|ESP|0|0|0
+Levi Colwill|CB|187|80|2003|CHE||ENG|0|0|0
+Marc Cucurella|LB|173|83|1998|CHE||ESP|0|0|1
+Nicolas Jackson|ST|186|78|2001|CHE BAY||SEN|0|0|0
+Pedro Neto|RW|172|81|2000|CHE||POR|0|0|0
+Jordan Henderson|CM|182|83|1990|LIV||ENG|1|0|0
+Fabinho|CM|188|84|1993|MON LIV||BRA|1|0|0
+Georginio Wijnaldum|CM|175|83|1990|LIV PSG ROM||NED|1|0|0
+James Milner|CM|176|81|1986|MCI LIV||ENG|1|0|0
+Joël Matip|CB|195|82|1991|LIV|L|CMR|1|0|0
+Xherdan Shaqiri|RW|169|80|1991|BAY LIV||SUI|2|0|0
+Divock Origi|ST|185|76|1995|LIV MIL||BEL|1|0|0
+Ian Rush|ST|180|90|1961|LIV|L|WAL|2|0|0
+John Barnes|LW|180|88|1963|LIV|L|ENG|0|0|0
+Daniel Sturridge|ST|188|81|1989|CHE LIV|L|ENG|2|0|0
+Sami Hyypiä|CB|193|85|1973|LIV|L|FIN|1|0|0
+Dirk Kuyt|RW|184|83|1980|LIV|L|NED|0|0|0
+Pepe Reina|GK|188|84|1982|BAR LIV NAP MIL|L|ESP|0|0|1
+Federico Chiesa|RW|175|80|1997|JUV LIV||ITA|0|0|0
+Curtis Jones|CM|185|78|2001|LIV||ENG|0|0|0
+Jeremie Frimpong|RB|171|80|2000|LIV||NED|0|0|0
+Theo Hernández|LB|184|85|1997|ATM RMA MIL||FRA|1|0|0
+Franco Baresi|CB|176|91|1960|MIL|L|ITA|3|0|1
+Marco van Basten|ST|188|94|1964|AJA MIL|L|NED|2|3|0
+Ruud Gullit|AM|186|92|1962|MIL CHE|L|NED|2|1|0
+Frank Rijkaard|CM|190|90|1962|AJA MIL|L|NED|3|0|0
+Filippo Inzaghi|ST|181|86|1973|JUV MIL|L|ITA|2|0|1
+Alessandro Nesta|CB|187|90|1976|MIL|L|ITA|2|0|1
+Gennaro Gattuso|CM|177|86|1978|MIL|L|ITA|2|0|1
+George Weah|ST|184|90|1966|PSG MIL CHE|L|LBR|0|1|0
+Mike Maignan|GK|191|86|1995|MIL||FRA|0|0|0
+Fikayo Tomori|CB|185|82|1997|CHE MIL||ENG|0|0|0
+Sandro Tonali|CM|181|83|2000|MIL||ITA|0|0|0
+Olivier Giroud|ST|193|83|1986|ARS CHE MIL||FRA|1|0|1
+Alexandre Pato|ST|179|80|1989|MIL|L|BRA|0|0|0
+Cafu|RB|176|90|1970|ROM MIL|L|BRA|1|0|2
+Rui Costa|AM|180|88|1972|MIL|L|POR|1|0|0
+Adrien Rabiot|CM|188|84|1995|PSG JUV MIL||FRA|0|0|0
+Dele Alli|AM|188|80|1996|TOT||ENG|0|0|0
+Hugo Lloris|GK|188|86|1986|LYO TOT||FRA|0|0|1
+Jan Vertonghen|CB|189|84|1987|AJA TOT||BEL|0|0|0
+Toby Alderweireld|CB|187|84|1989|AJA ATM TOT||BEL|0|0|0
+Mousa Dembélé|CM|185|84|1987|TOT|L|BEL|0|0|0
+Kieran Trippier|RB|178|82|1990|TOT ATM||ENG|0|0|0
+Lucas Moura|RW|172|80|1992|PSG TOT||BRA|0|0|0
+Dejan Kulusevski|RW|186|82|2000|JUV TOT||SWE|0|0|0
+Pedro Porro|RB|173|82|1999|TOT||ESP|0|0|1
+Richarlison|ST|184|80|1997|TOT||BRA|0|0|0
+Jermain Defoe|ST|169|80|1982|TOT|L|ENG|0|0|0
+Ledley King|CB|188|82|1980|TOT|L|ENG|0|0|0
+Jürgen Klinsmann|ST|181|89|1964|INT TOT BAY|L|GER|0|0|1
+Gary Lineker|ST|177|88|1960|BAR TOT|L|ENG|0|0|0
+Teddy Sheringham|ST|185|84|1966|TOT MUN|L|ENG|1|0|0
+Dominic Solanke|ST|187|79|1997|CHE LIV TOT||ENG|0|0|0
+Diego Godín|CB|187|86|1986|ATM INT|L|URU|0|0|0
+Saúl Ñíguez|CM|184|83|1994|ATM CHE||ESP|0|0|0
+Diego Simeone|CM|179|85|1970|ATM INT|L|ARG|0|0|0
+João Félix|FW|181|81|1999|ATM CHE BAR MIL||POR|0|0|0
+Marcos Llorente|CM|184|83|1995|RMA ATM||ESP|1|0|1
+Rodrigo De Paul|CM|180|84|1994|ATM||ARG|0|0|1
+Giuliano Simeone|RW|177|78|2002|ATM||ARG|0|0|0
+Alexander Sørloth|ST|195|81|1995|ATM||NOR|0|0|0
+Filipe Luís|LB|182|85|1985|ATM CHE|L|BRA|0|0|0
+Juanfran|RB|180|82|1985|RMA ATM|L|ESP|0|0|0
+Gabi|CM|180|82|1983|ATM|L|ESP|0|0|0
+Arda Turan|AM|175|83|1987|ATM BAR|L|TUR|0|0|0
+Robin Le Normand|CB|187|81|1996|ATM||ESP|0|0|0
+Yannick Carrasco|LW|181|81|1993|ATM||BEL|0|0|0`;
 const DB=RAW.trim().split('\n').map(l=>{const[n,pos,h,r,y,c,L,nat,ucl,bdo,wc]=l.split('|');return{n,pos,h:+h,r:+r,y:+y,c:c.split(' '),L:L==='L',nat,ucl:+ucl,bdo:+bdo,wc:+wc}});
 const SLOTS=['ST','CM','CM','CB','GK'];
 const grp=p=>({GK:'GK',CB:'CB',LB:'CB',RB:'CB',CM:'CM',AM:'CM',RM:'CM'})[p]||'ST';
-const NAT={ENG:'England',ESP:'Spain',FRA:'France',BRA:'Brazil',ARG:'Argentina',GER:'Germany',POR:'Portugal',NED:'Netherlands',ITA:'Italy',BEL:'Belgium',URU:'Uruguay',CRO:'Croatia',SCO:'Scotland',NOR:'Norway',EGY:'Egypt',SWE:'Sweden',CMR:'Cameroon',MAR:'Morocco',WAL:'Wales',UKR:'Ukraine',TUR:'Turkey',CIV:'Ivory Coast',SRB:'Serbia',SVN:'Slovenia',HUN:'Hungary',POL:'Poland',CRC:'Costa Rica',SEN:'Senegal',NGA:'Nigeria',KOR:'South Korea',CAN:'Canada',COL:'Colombia',GEO:'Georgia',ECU:'Ecuador',DEN:'Denmark',IRL:'Ireland',CZE:'Czechia'};
+const NAT={ENG:'England',ESP:'Spain',FRA:'France',BRA:'Brazil',ARG:'Argentina',GER:'Germany',POR:'Portugal',NED:'Netherlands',ITA:'Italy',BEL:'Belgium',URU:'Uruguay',CRO:'Croatia',SCO:'Scotland',NOR:'Norway',EGY:'Egypt',SWE:'Sweden',CMR:'Cameroon',MAR:'Morocco',WAL:'Wales',UKR:'Ukraine',TUR:'Turkey',CIV:'Ivory Coast',SRB:'Serbia',SVN:'Slovenia',HUN:'Hungary',POL:'Poland',CRC:'Costa Rica',SEN:'Senegal',NGA:'Nigeria',KOR:'South Korea',CAN:'Canada',COL:'Colombia',GEO:'Georgia',ECU:'Ecuador',DEN:'Denmark',IRL:'Ireland',CZE:'Czechia',ALG:'Algeria',BUL:'Bulgaria',MEX:'Mexico',NIR:'Northern Ireland',TRI:'Trinidad and Tobago',SUI:'Switzerland',BIH:'Bosnia',AUT:'Austria',GHA:'Ghana',USA:'USA',LBR:'Liberia',FIN:'Finland',RUS:'Russia'};
 const pl=(v,w)=>`${v} ${w}${v===1?'':'s'}`;
 const CATS={
  tall:{t:'BUILD THE 5 TALLEST',sub:'Highest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',sp:v=>v+' centimetres',hi:1,ask:'Height (cm)'},
@@ -409,7 +613,7 @@ function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say(
   p={n:title(v),pos:'?',h:0,r:0,y:YEAR,c:[],nat:'',ucl:0,bdo:0,wc:0};p[C.k]=+q}
  if(addPick(i,p)){$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide')}}
 /* voice name matching */
-const ALIAS={cr7:'Cristiano Ronaldo',vini:'Vinícius Júnior',vinny:'Vinícius Júnior',holland:'Erling Haaland',halland:'Erling Haaland',mbappe:'Kylian Mbappé',r9:'Ronaldo Nazário','ronaldo nazario':'Ronaldo Nazário','el fenomeno':'Ronaldo Nazário',zizou:'Zinedine Zidane',kdb:'Kevin De Bruyne',trent:'Trent Alexander-Arnold',taa:'Trent Alexander-Arnold',vvd:'Virgil van Dijk',kvara:'Khvicha Kvaratskhelia',dembele:'Ousmane Dembélé',lewa:'Robert Lewandowski',ibra:'Zlatan Ibrahimović',zlatan:'Zlatan Ibrahimović',bruno:'Bruno Fernandes',yamal:'Lamine Yamal',lamine:'Lamine Yamal',rudiger:'Antonio Rüdiger',odegaard:'Martin Ødegaard',ozil:null};
+const ALIAS={cr7:'Cristiano Ronaldo',ronaldo:'Cristiano Ronaldo',cristiano:'Cristiano Ronaldo',chicharito:'Javier Hernández',depay:'Memphis Depay',memphis:'Memphis Depay',pirlo:'Andrea Pirlo',kaka:'Kaká',drogba:'Didier Drogba',zola:'Gianfranco Zola',vini:'Vinícius Júnior',vinny:'Vinícius Júnior',holland:'Erling Haaland',halland:'Erling Haaland',mbappe:'Kylian Mbappé',r9:'Ronaldo Nazário','ronaldo nazario':'Ronaldo Nazário','el fenomeno':'Ronaldo Nazário',zizou:'Zinedine Zidane',kdb:'Kevin De Bruyne',trent:'Trent Alexander-Arnold',taa:'Trent Alexander-Arnold',vvd:'Virgil van Dijk',kvara:'Khvicha Kvaratskhelia',dembele:'Ousmane Dembélé',lewa:'Robert Lewandowski',ibra:'Zlatan Ibrahimović',zlatan:'Zlatan Ibrahimović',bruno:'Bruno Fernandes',yamal:'Lamine Yamal',lamine:'Lamine Yamal',rudiger:'Antonio Rüdiger',odegaard:'Martin Ødegaard',ozil:null};
 const KEY=(()=>{const m={};const add=(k,p)=>{if(!k||k.length<3)return;(m[k]=m[k]||[]).includes(p)||m[k].push(p)};
  for(const p of DB){const t=norm(p.n).split(' ');add(t.join(' '),p);add(t[t.length-1],p);if(t.length>1){add(t[0],p);if(t.length>2)add(t.slice(-2).join(' '),p)}}
  for(const[k,v]of Object.entries(ALIAS)){const p=v&&DB.find(x=>x.n===v);if(p)m[k]=[p]}return m})();
@@ -420,7 +624,7 @@ const KP=Object.entries(KEY).map(([k,ps])=>({k,f:phon(k),ps,wc:k.split(' ').leng
 function matchWords(w){const F=flt();let best=null;
  for(let len=3;len>=1;len--)for(let j=0;j+len<=w.length;j++){const win=w.slice(j,j+len).join(' '),pf=phon(win);if(pf.length<3)continue;
   for(const e of KP){if(Math.abs(e.f.length-pf.length)>3)continue;const d=lev(pf,e.f),L=Math.max(pf.length,e.f.length),sim=1-d/L;
-   const need=L<=4?1:L<=6?.8:.74;if(sim<need)continue;
+   const need=L<=4?1:L<=6?.8:.74;if(sim<need)continue;if(e.ps.length>1&&e.wc===1){const ff=e.ps.filter(p=>owner(p.n)<0&&F.ok(p));if(ff.length!==1)continue}
    const free=e.ps.filter(p=>owner(p.n)<0),fit=free.filter(F.ok);let p=fit[0]||free[0]||e.ps[0];
    if(e.ps.length>1&&fit.length!==1&&e.wc===1&&e.k.split(' ').length===1&&sim<1)continue;
    const score=sim+(e.wc>1?.06:0)+(fit.length?.05:0)+(owner(p.n)<0?.04:0);
