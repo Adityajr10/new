@@ -68,8 +68,8 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
  <section class="card"><h2>Game setup</h2>
   <div class="tabs"><button id="tBid" aria-pressed="true">Bid draft</button><button id="tQuiz" aria-pressed="false">Name race</button></div>
   <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Aditya" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Anmol" maxlength="12"></div></div>
-  <div id="setBid" class="row"><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
-   <div><label for="pool">Auction mode</label><select id="pool"><option value="stars">Quality: superstars only</option><option value="all">Normal: all players</option></select></div></div>
+  <div id="setBid" class="row"><div><label for="bcat">Auction category</label><select id="bcat"><option value="fb">Football players</option><option value="movie">Movies</option><option value="series">Web series</option><option value="wwe">WWE superstars</option><option value="mix">Mix: football, movie, series, WWE</option></select></div><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
+   <div><label for="pool">Auction mode</label><select id="pool"><option value="stars">Quality: big names only</option><option value="all">Normal: everything</option></select></div></div>
   <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team or country</label><select id="club"></select></div></div>
   <button class="go" id="randBtn" style="margin-bottom:10px">Random challenge</button>
   <p class="note">Changing the mode, budget, pool, challenge or team starts a new game.</p>
@@ -536,6 +536,172 @@ Robin Le Normand|CB|187|81|1996|ATM||ESP|0|0|0
 Yannick Carrasco|LW|181|81|1993|ATM||BEL|0|0|0`;
 const DB=RAW.trim().split('\n').map(l=>{const[n,pos,h,r,y,c,L,nat,ucl,bdo,wc]=l.split('|');return{n,pos,h:+h,r:+r,y:+y,c:c.split(' '),L:L==='L',nat,ucl:+ucl,bdo:+bdo,wc:+wc}});
 const SLOTS=['ST','CM','CM','CB','GK'];
+const SLOTSET={fb:SLOTS,movie:['ACTION','COMEDY','DRAMA','THRILLER','SCI-FI'],series:['CRIME','DRAMA','COMEDY','THRILLER','FANTASY'],wwe:['ICON','BRAWLER','FLYER','TECH','POWER'],mix:['FOOTBALL','MOVIE','SERIES','WWE']};
+const KSLOT={fb:'FOOTBALL',movie:'MOVIE',series:'SERIES',wwe:'WWE'},QT={fb:89,movie:82,series:85,wwe:90};
+const KC={movie:['#c81d3a','MOVIE'],series:['#6a35d6','WEB SERIES'],wwe:['#1c1c1c','WWE']};
+const TITLES={fb:'MUTED FOOTBALLER DRAFT',movie:'MOVIE DRAFT',series:'WEB SERIES DRAFT',wwe:'WWE DRAFT',mix:'ULTIMATE MIX DRAFT'};
+const ITEMS=`movie|The Shawshank Redemption|DRAMA|9.3|1994|English
+movie|The Godfather|DRAMA|9.2|1972|English
+movie|The Dark Knight|ACTION|9.0|2008|English
+movie|Inception|SCI-FI|8.8|2010|English
+movie|Interstellar|SCI-FI|8.7|2014|English
+movie|Avengers: Endgame|SCI-FI|8.4|2019|English
+movie|Avengers: Infinity War|SCI-FI|8.4|2018|English
+movie|Titanic|DRAMA|7.9|1997|English
+movie|Avatar|SCI-FI|7.9|2009|English
+movie|Fight Club|THRILLER|8.8|1999|English
+movie|Joker|THRILLER|8.4|2019|English
+movie|Oppenheimer|DRAMA|8.3|2023|English
+movie|Spider-Man: No Way Home|SCI-FI|8.2|2021|English
+movie|John Wick|ACTION|7.4|2014|English
+movie|Top Gun: Maverick|ACTION|8.2|2022|English
+movie|The Matrix|SCI-FI|8.7|1999|English
+movie|Gladiator|ACTION|8.5|2000|English
+movie|Forrest Gump|DRAMA|8.8|1994|English
+movie|Pulp Fiction|THRILLER|8.9|1994|English
+movie|Jurassic Park|SCI-FI|8.2|1993|English
+movie|The Return of the King|SCI-FI|9.0|2003|English
+movie|Iron Man|SCI-FI|7.9|2008|English
+movie|Deadpool|COMEDY|8.0|2016|English
+movie|Dune: Part Two|SCI-FI|8.5|2024|English
+movie|Parasite|THRILLER|8.5|2019|Korean
+movie|Home Alone|COMEDY|7.7|1990|English
+movie|The Hangover|COMEDY|7.7|2009|English
+movie|Toy Story|COMEDY|8.3|1995|English
+movie|The Lion King|DRAMA|8.5|1994|English
+movie|Mission: Impossible Fallout|ACTION|7.7|2018|English
+movie|Mad Max: Fury Road|ACTION|8.1|2015|English
+movie|The Wolf of Wall Street|COMEDY|8.2|2013|English
+movie|Se7en|THRILLER|8.6|1995|English
+movie|The Silence of the Lambs|THRILLER|8.6|1991|English
+movie|3 Idiots|COMEDY|8.4|2009|Hindi
+movie|Dangal|DRAMA|8.3|2016|Hindi
+movie|PK|COMEDY|8.1|2014|Hindi
+movie|Sholay|ACTION|8.1|1975|Hindi
+movie|Dilwale Dulhania Le Jayenge|DRAMA|8.0|1995|Hindi
+movie|Gangs of Wasseypur|THRILLER|8.2|2012|Hindi
+movie|Lagaan|DRAMA|8.1|2001|Hindi
+movie|Andhadhun|THRILLER|8.2|2018|Hindi
+movie|Drishyam|THRILLER|8.2|2015|Hindi
+movie|Tumbbad|THRILLER|8.2|2018|Hindi
+movie|Hera Pheri|COMEDY|8.1|2000|Hindi
+movie|Munna Bhai MBBS|COMEDY|8.1|2003|Hindi
+movie|Taare Zameen Par|DRAMA|8.3|2007|Hindi
+movie|Rang De Basanti|DRAMA|8.1|2006|Hindi
+movie|Chak De India|DRAMA|8.1|2007|Hindi
+movie|Zindagi Na Milegi Dobara|COMEDY|8.2|2011|Hindi
+movie|Dil Chahta Hai|COMEDY|8.1|2001|Hindi
+movie|Stree|COMEDY|7.5|2018|Hindi
+movie|Bhool Bhulaiyaa|COMEDY|7.4|2007|Hindi
+movie|Golmaal|COMEDY|7.4|2006|Hindi
+movie|12th Fail|DRAMA|8.9|2023|Hindi
+movie|Jawan|ACTION|7.0|2023|Hindi
+movie|Pathaan|ACTION|5.9|2023|Hindi
+movie|Animal|ACTION|6.1|2023|Hindi
+movie|Kabir Singh|DRAMA|7.0|2019|Hindi
+movie|RRR|ACTION|7.8|2022|Telugu
+movie|Baahubali 2|ACTION|8.2|2017|Telugu
+movie|KGF Chapter 2|ACTION|8.2|2022|Kannada
+movie|Pushpa|ACTION|7.6|2021|Telugu
+movie|Vikram|ACTION|8.3|2022|Tamil
+movie|Jailer|ACTION|7.1|2023|Tamil
+movie|Kantara|THRILLER|8.2|2022|Kannada
+movie|Kalki 2898 AD|SCI-FI|7.1|2024|Telugu
+movie|Robot|SCI-FI|7.1|2010|Tamil
+series|Breaking Bad|CRIME|9.5|2008|English
+series|Game of Thrones|FANTASY|9.2|2011|English
+series|Stranger Things|FANTASY|8.7|2016|English
+series|Money Heist|CRIME|8.2|2017|Spanish
+series|Squid Game|THRILLER|8.0|2021|Korean
+series|The Office|COMEDY|9.0|2005|English
+series|Friends|COMEDY|8.9|1994|English
+series|Peaky Blinders|CRIME|8.8|2013|English
+series|Dark|FANTASY|8.7|2017|German
+series|The Boys|FANTASY|8.6|2019|English
+series|Sacred Games|CRIME|8.5|2018|Hindi
+series|Mirzapur|CRIME|8.4|2018|Hindi
+series|Panchayat|COMEDY|9.0|2020|Hindi
+series|The Family Man|THRILLER|8.7|2019|Hindi
+series|Scam 1992|DRAMA|9.2|2020|Hindi
+series|Kota Factory|DRAMA|9.0|2019|Hindi
+series|Aspirants|DRAMA|9.2|2021|Hindi
+series|Paatal Lok|CRIME|8.1|2020|Hindi
+series|Farzi|CRIME|8.3|2023|Hindi
+series|Delhi Crime|CRIME|8.5|2019|Hindi
+series|Gullak|COMEDY|9.1|2019|Hindi
+series|TVF Pitchers|COMEDY|9.1|2015|Hindi
+series|Wednesday|FANTASY|8.0|2022|English
+series|The Witcher|FANTASY|8.0|2019|English
+series|Narcos|CRIME|8.7|2015|English
+series|Sherlock|THRILLER|9.1|2010|English
+series|Better Call Saul|CRIME|9.0|2015|English
+series|The Last of Us|DRAMA|8.7|2023|English
+series|House of the Dragon|FANTASY|8.3|2022|English
+series|Severance|THRILLER|8.7|2022|English
+series|The Crown|DRAMA|8.6|2016|English
+series|Ozark|CRIME|8.5|2017|English
+series|Lucifer|FANTASY|8.1|2016|English
+series|Prison Break|THRILLER|8.3|2005|English
+series|The Mandalorian|FANTASY|8.6|2019|English
+series|Loki|FANTASY|8.2|2021|English
+series|Asur|THRILLER|8.5|2020|Hindi
+series|Rocket Boys|DRAMA|8.9|2022|Hindi
+series|Made in Heaven|DRAMA|8.3|2019|Hindi
+series|Chernobyl|DRAMA|9.3|2019|English
+series|Brooklyn Nine-Nine|COMEDY|8.4|2013|English
+series|Mr. Robot|THRILLER|8.5|2015|English
+wwe|John Cena|ICON|95|0|Ruthless Aggression Era
+wwe|The Rock|ICON|97|0|Attitude Era
+wwe|Stone Cold Steve Austin|BRAWLER|97|0|Attitude Era
+wwe|The Undertaker|POWER|96|0|Attitude Era
+wwe|Roman Reigns|BRAWLER|95|0|Modern Era
+wwe|Brock Lesnar|POWER|95|0|Ruthless Aggression Era
+wwe|Triple H|TECH|93|0|Attitude Era
+wwe|Shawn Michaels|FLYER|95|0|New Generation Era
+wwe|Randy Orton|TECH|93|0|Ruthless Aggression Era
+wwe|Edge|TECH|91|0|Ruthless Aggression Era
+wwe|CM Punk|TECH|92|0|PG Era
+wwe|Seth Rollins|FLYER|92|0|Modern Era
+wwe|Cody Rhodes|ICON|93|0|Modern Era
+wwe|Batista|POWER|90|0|Ruthless Aggression Era
+wwe|Rey Mysterio|FLYER|90|0|Ruthless Aggression Era
+wwe|Eddie Guerrero|TECH|90|0|Ruthless Aggression Era
+wwe|Kurt Angle|TECH|92|0|Attitude Era
+wwe|Hulk Hogan|ICON|94|0|Golden Era
+wwe|Ric Flair|TECH|93|0|Golden Era
+wwe|Bret Hart|TECH|93|0|New Generation Era
+wwe|Randy Savage|ICON|92|0|Golden Era
+wwe|Ultimate Warrior|BRAWLER|88|0|Golden Era
+wwe|Kane|POWER|89|0|Attitude Era
+wwe|Big Show|POWER|88|0|Attitude Era
+wwe|The Great Khali|POWER|80|0|Ruthless Aggression Era
+wwe|Jinder Mahal|BRAWLER|78|0|PG Era
+wwe|Drew McIntyre|BRAWLER|91|0|Modern Era
+wwe|AJ Styles|FLYER|91|0|Modern Era
+wwe|Kofi Kingston|FLYER|85|0|PG Era
+wwe|Becky Lynch|BRAWLER|90|0|Modern Era
+wwe|Charlotte Flair|TECH|91|0|Modern Era
+wwe|Rhea Ripley|POWER|92|0|Modern Era
+wwe|Bianca Belair|POWER|89|0|Modern Era
+wwe|Gunther|TECH|93|0|Modern Era
+wwe|LA Knight|BRAWLER|87|0|Modern Era
+wwe|Jey Uso|BRAWLER|86|0|Modern Era
+wwe|Sami Zayn|FLYER|86|0|Modern Era
+wwe|Kevin Owens|BRAWLER|88|0|Modern Era
+wwe|Goldberg|POWER|90|0|Attitude Era
+wwe|Mick Foley|BRAWLER|87|0|Attitude Era
+wwe|Chris Jericho|TECH|91|0|Attitude Era
+wwe|Daniel Bryan|TECH|91|0|PG Era
+wwe|Logan Paul|FLYER|84|0|Modern Era
+wwe|Bobby Lashley|POWER|88|0|Modern Era
+wwe|Andre the Giant|POWER|92|0|Golden Era
+wwe|Iyo Sky|FLYER|87|0|Modern Era
+wwe|Solo Sikoa|POWER|84|0|Modern Era`.split('\n').map(l=>{const[kind,n,g,sc,y,info]=l.split('|');const im=+sc;return{kind,n,g,im,r:kind==='wwe'?im:Math.round(im*10),y:+y,info,c:[],pos:'?',h:0,col:KC[kind][0]}});
+const bcat=()=>$('bcat').value;
+const canTake=(i,p)=>S.teams[i].some(x=>!x.p&&(bcat()!=='mix'||!p||x.pos===groupOf(p)));
+const poolFor=k=>k==='fb'?DB:ITEMS.filter(p=>p.kind===k);
+function groupOf(p){if(bcat()==='mix')return KSLOT[p.kind||'fb'];return p.kind?p.g:grp(p.pos)}
+const kindWord=p=>!p.kind?'footballer':p.kind==='movie'?'movie':p.kind==='series'?'web series':'WWE wrestler';
 const grp=p=>({GK:'GK',CB:'CB',LB:'CB',RB:'CB',CM:'CM',AM:'CM',RM:'CM'})[p]||'ST';
 const NAT={ENG:'England',ESP:'Spain',FRA:'France',BRA:'Brazil',ARG:'Argentina',GER:'Germany',POR:'Portugal',NED:'Netherlands',ITA:'Italy',BEL:'Belgium',URU:'Uruguay',CRO:'Croatia',SCO:'Scotland',NOR:'Norway',EGY:'Egypt',SWE:'Sweden',CMR:'Cameroon',MAR:'Morocco',WAL:'Wales',UKR:'Ukraine',TUR:'Turkey',CIV:'Ivory Coast',SRB:'Serbia',SVN:'Slovenia',HUN:'Hungary',POL:'Poland',CRC:'Costa Rica',SEN:'Senegal',NGA:'Nigeria',KOR:'South Korea',CAN:'Canada',COL:'Colombia',GEO:'Georgia',ECU:'Ecuador',DEN:'Denmark',IRL:'Ireland',CZE:'Czechia',ALG:'Algeria',BUL:'Bulgaria',MEX:'Mexico',NIR:'Northern Ireland',TRI:'Trinidad and Tobago',SUI:'Switzerland',BIH:'Bosnia',AUT:'Austria',GHA:'Ghana',USA:'USA',LBR:'Liberia',FIN:'Finland',RUS:'Russia'};
 const pl=(v,w)=>`${v} ${w}${v===1?'':'s'}`;
@@ -554,7 +720,7 @@ $('club').innerHTML='<optgroup label="Clubs">'+Object.entries(CLUB).map(([k,c])=
 function flt(){const v=$('club').value;if(v==='ANY')return{name:'Any',ok:()=>true,known:()=>true};const[t,k]=v.split(':');
  return t==='c'?{name:CLUB[k][0],ok:p=>p.c.includes(k),known:p=>p.c.length>0}:{name:NAT[k],ok:p=>p.nat===k,known:p=>!!p.nat}}
 
-const HOWB=`<p>Tap <b>Start voice game</b> and allow the microphone. The game reads out each player and says who bids first. Then say your bids out loud, like "2 dollars", "3 dollars".</p><p>After the last bid it counts down, then says "sold" and moves the player's card into the winner's team, in the best empty spot. Then the next player comes up. You must keep at least $1 for every other empty spot.</p><p>You can still set the bid and tap <b>Sold to</b> yourself, and the winner picks the spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
+const HOWB=`<p>Pick an <b>Auction category</b>: football players, movies, web series, WWE superstars, or Mix (football, movie, series and WWE take turns, and you each build one of each). Tap <b>Start voice game</b> and allow the microphone. The game reads out each player and says who bids first. Then say your bids out loud, like "2 dollars", "3 dollars".</p><p>After the last bid it counts down, then says "sold" and moves the player's card into the winner's team, in the best empty spot. Then the next player comes up. You must keep at least $1 for every other empty spot.</p><p>You can still set the bid and tap <b>Sold to</b> yourself, and the winner picks the spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
 const HOWQ=`<p>Pick a challenge and a team or country, or tap <b>Random challenge</b>. Then tap <b>Start voice game</b>. The game reads the challenge and says who goes first.</p><p>Take turns saying one player's name. The game recognises him, checks he fits the team, says his number (for example "Cristiano Ronaldo, 5 Champions Leagues") and adds it to your score. A player can only be picked once. After 5 each, the totals decide the winner.</p>`;
 
 let mode='bid',S;const photos={};
@@ -569,25 +735,27 @@ function owner(n){for(const i of[0,1]){if(mode==='bid'?S.teams[i].some(s=>s.p&&s
 
 function fresh(){const b=Math.max(5,Math.min(500,Math.round(+$('budget').value)||20));
  clearTimeout(autoT);endAt=0;anim=null;try{speechSynthesis.cancel()}catch(e){}
- S={lead:null,money:[b,b],teams:[0,1].map(()=>SLOTS.map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
+ S={lead:null,money:[b,b],teams:[0,1].map(()=>SLOTSET[bcat()].map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
  $('amt').value=1;$('qvRow').classList.add('hide');ui();say('')}
 const KEYS=['money','teams','quiz','cur','shown','done','last','turn'];
 function snap(){S.hist.push(JSON.stringify(KEYS.reduce((o,k)=>(o[k]=S[k],o),{})))}
 function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');clearTimeout(autoT);endAt=0;anim=null;Object.assign(S,JSON.parse(h));S.pending=null;S.lead=null;S.warn=null;ui();say('Undone')}
 
-function nextPlayer(){if(S.done)return;const pool=$('pool').value;
- let ps=DB.filter(p=>(pool==='stars'?p.r>=89:true)&&!S.shown.includes(p.n));
- const need=new Set();S.teams.forEach(t=>t.forEach(s=>{if(!s.p)need.add(s.pos)}));
- const pref=ps.filter(p=>need.has(grp(p.pos)));if(pref.length)ps=pref;
- if(!ps.length)return say('No players left in this pool. Switch the pool or type a name.');
+function nextPlayer(){if(S.done)return;const cat=bcat(),pool=$('pool').value;
+ const need=new Set();S.teams.forEach(t=>t.forEach(x=>{if(!x.p)need.add(x.pos)}));
+ let kind=cat;if(cat==='mix'){const order=['fb','movie','series','wwe'];kind=null;for(let j=0;j<4;j++){const k=order[(S.shown.length+j)%4];if(need.has(KSLOT[k])){kind=k;break}}if(!kind)return}
+ const left=poolFor(kind).filter(p=>!S.shown.includes(p.n)&&owner(p.n)<0);let ps=left.filter(p=>pool==='stars'?p.r>=QT[kind]:true);
+ if(cat!=='mix'){const pref=ps.filter(p=>need.has(groupOf(p)));if(pref.length)ps=pref}
+ if(!ps.length)ps=left;if(!ps.length)return say('Nothing left to auction. Start a new game.');
  clearTimeout(autoT);snap();S.cur=ps[Math.random()*ps.length|0];S.shown.push(S.cur.n);S.pending=null;$('amt').value=1;ui();announce()}
-function customAuction(){if(S.done)return;const v=$('custom').value.trim();if(!v)return say('Type a player name first');const c=cands(v);
- if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));
- const p=c[0]||{n:title(v),pos:'?',h:0,r:75,y:0,c:[]};
- if(owner(p.n)>=0)return say(p.n+' is already in a team');
- clearTimeout(autoT);snap();S.cur=p;S.shown.push(p.n);S.pending=null;$('custom').value='';$('amt').value=1;ui();announce();if(!c[0])say(p.n+" isn't on our list, so he counts as a 75 rating.")}
+function customAuction(){if(S.done)return;const v=$('custom').value.trim();if(!v)return say('Type a name first');const cat=bcat();let p=null;
+ if(cat==='fb'||cat==='mix'){const c=cands(v);if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));p=c[0]}
+ if(!p&&cat!=='fb'){const k=norm(v),L=cat==='mix'?ITEMS:poolFor(cat);p=L.find(x=>norm(x.n)===k)||(L.filter(x=>norm(x.n).includes(k)).length===1?L.find(x=>norm(x.n).includes(k)):null)}
+ if(!p){const kind=cat==='mix'?'fb':cat;p=kind==='fb'?{n:title(v),pos:'?',h:0,r:75,y:0,c:[]}:{kind,n:title(v),g:SLOTSET[kind][0],im:kind==='wwe'?75:7.5,r:75,y:0,info:'',c:[],pos:'?',h:0,col:KC[kind][0]}}
+ if(owner(p.n)>=0)return say(p.n+' is already taken');
+ clearTimeout(autoT);snap();S.cur=p;S.shown.push(p.n);S.pending=null;$('custom').value='';$('amt').value=1;ui();announce()}
 function sell(i){if(S.done||!S.cur)return say('Tap Next player first');endAt=0;const price=Math.round(+$('amt').value);const empty=S.teams[i].filter(s=>!s.p).length;
- if(!empty)return say(N(i)+"'s team is already full");if(!(price>=1))return say('Bids start at $1');
+ if(!canTake(i,S.cur))return say(bcat()==='mix'?`${N(i)} already has a ${groupOf(S.cur).toLowerCase()} pick`:N(i)+"'s team is already full");if(!(price>=1))return say('Bids start at $1');
  const max=S.money[i]-(empty-1);if(price>max)return say(`${N(i)} can bid $${max} at most (keep $1 for each other empty spot)`);
  S.pending={i,price};ui();say('')}
 function place(k){const{i,price}=S.pending;snap();const s=S.teams[i][k];s.p=S.cur;s.price=price;S.money[i]-=price;S.last={i};S.cur=null;S.pending=null;S.lead=null;endAt=0;
@@ -647,16 +815,16 @@ function randomChallenge(){const ck=Object.keys(CATS),fo=[...$('club').options].
 let speaking=false,muteUntil=0,listening=false,recog=null,endAt=0,noBidAt=0,autoT=0,anim=null,deb=0;const used={},ANCH=[[],[]];
 const POSN=p=>p==='?'?'':({GK:'goalkeeper',CB:'defender',LB:'defender',RB:'defender',CM:'midfielder',AM:'midfielder',RM:'midfielder'})[p]||'forward';
 const auto=()=>$('auto').checked;
-const open1=()=>{const f=[0,1].filter(i=>S.teams[i].some(s=>!s.p));return f.length===1?f[0]:(S.shown.length%2?0:1)};
+const open1=()=>{const f=[0,1].filter(i=>canTake(i,S.cur));return f.length===1?f[0]:(S.shown.length%2?0:1)};
 function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+1100;if(cb)cb()};
  const ss=window.speechSynthesis;if(!ss||!t){setTimeout(fin,300);return}
  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;u.onend=fin;u.onerror=fin;speaking=true;ss.cancel();ss.speak(u)}catch(e){fin();return}
  setTimeout(fin,1800+t.length*90)}
-function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=POSN(p.pos);
+function announce(){S.lead=null;endAt=0;noBidAt=0;const p=S.cur,o=open1(),pn=!p.kind?POSN(p.pos):p.kind==='movie'?`${p.info} movie${p.y?', '+p.y:''}`:p.kind==='series'?`${p.info} web series`:'WWE superstar';
  say(`${p.n} is up. ${N(o)} bids first.`);
  speak(`${p.n}${pn?', '+pn:''}. ${N(o)} to bid first.`,()=>{noBidAt=Date.now()+4000})}
 function bid(i,amt,src){if(mode!=='bid'||S.done||!S.cur||S.pending)return;
- if(S.teams[i].every(s=>s.p)){i=1-i;if(S.teams[i].every(s=>s.p))return}
+ if(!canTake(i,S.cur)){i=1-i;if(!canTake(i,S.cur))return}
  const cur=S.lead?S.lead.amt:0;if(!(amt>cur))return say(`Heard $${amt}, but the bid is already $${cur}. Go higher.`);
  const empty=S.teams[i].filter(s=>!s.p).length,max=S.money[i]-(empty-1);
  if(amt>max)return say(`${N(i)} can only bid up to $${max}.`);
@@ -664,7 +832,7 @@ function bid(i,amt,src){if(mode!=='bid'||S.done||!S.cur||S.pending)return;
  say(`${N(i)} bids $${amt}`+(src==='voice'?' (heard by mic)':''))}
 function afterSale(){if(S.done){const r=result(),[a,b]=r.s;speak(a===b?"Full time. It's a draw!":`Full time. ${N(a>b?0:1)} wins, ${Math.max(a,b)} to ${Math.min(a,b)}.`)}
  else if(auto())autoT=setTimeout(nextPlayer,1300)}
-function autoSell(){const{i,amt}=S.lead,p=S.cur,t=S.teams[i];let k=t.findIndex(s=>!s.p&&s.pos===grp(p.pos));if(k<0)k=t.findIndex(s=>!s.p);
+function autoSell(){const{i,amt}=S.lead,p=S.cur,t=S.teams[i];let k=t.findIndex(s=>!s.p&&s.pos===groupOf(p));if(k<0)k=t.findIndex(s=>!s.p);
  snap();t[k].p=p;t[k].price=amt;S.money[i]-=amt;S.cur=null;S.lead=null;S.last={i};anim={p,i,k,t0:performance.now()};
  if(S.teams.every(x=>x.every(s=>s.p)))S.done=true;ui();say(`${p.n} sold to ${N(i)} for $${amt}, at ${t[k].pos}.`);
  speak(`${p.n}, sold to ${N(i)} for ${amt} dollar${amt>1?'s':''}!`,afterSale)}
@@ -693,18 +861,18 @@ function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognit
  recog.onend=()=>{if(listening)setTimeout(()=>{try{recog.start()}catch(e){}},250)};
  try{recog.start();$('micNote').textContent=`Listening. Just say the number: "2", "3 dollars"… Each new bid goes to the other player. Raising your own bid? Add your name ("${N(1)} 5"). Or tap your half of the stage to raise by $1.`}catch(e){listening=false}}
 
-function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:'Total team rating'};
+function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:bcat()==='fb'?'Total team rating':'Total score'};
  const C=CATS[$('cat').value];return{s:S.quiz.map(t=>t.reduce((a,p)=>a+C.v(p),0)),f:C.f,hi:C.hi,sub:C.sub}}
 
 function ui(){const q=mode==='quiz';
  $('tBid').setAttribute('aria-pressed',!q);$('tQuiz').setAttribute('aria-pressed',q);
  $('setBid').classList.toggle('hide',q);$('setQuiz').classList.toggle('hide',!q);$('pBid').classList.toggle('hide',q);$('pQuiz').classList.toggle('hide',!q);
  for(const i of[0,1]){$('sell'+i).textContent='Sold to '+N(i);$('q'+i).textContent='Give to '+N(i);$('sbl'+i).textContent=N(i)+"'s bid";
-  $('sell'+i).disabled=S.done||!S.cur||S.teams[i].every(s=>s.p);$('q'+i).disabled=S.done||S.quiz[i].length>=5}
+  $('sell'+i).disabled=S.done||!S.cur||!canTake(i,S.cur);$('q'+i).disabled=S.done||S.quiz[i].length>=5}
  $('nextBtn').disabled=S.done;$('skipBtn').disabled=!S.cur;
  $('slotBox').classList.toggle('hide',!S.pending);
  if(S.pending){const{i,price}=S.pending;$('slotQ').textContent=`${N(i)} buys ${S.cur.n} for $${price}. Which spot?`;
-  $('slots').innerHTML=S.teams[i].map((s,k)=>s.p?'':`<button data-k="${k}" class="${s.pos===grp(S.cur.pos)?'hint':''}">${s.pos}</button>`).join('')+'<button data-k="x">Cancel</button>'}
+  $('slots').innerHTML=S.teams[i].map((s,k)=>s.p||(bcat()==='mix'&&s.pos!==groupOf(S.cur))?'':`<button data-k="${k}" class="${s.pos===groupOf(S.cur)?'hint':''}">${s.pos}</button>`).join('')+'<button data-k="x">Cancel</button>'}
  const F=flt(),list=q?DB.filter(F.ok):DB;
  $('names').innerHTML=list.map(p=>`<option value="${p.n}"></option>`).join('');
  $('how').innerHTML=q?HOWQ:HOWB;phUi()}
@@ -723,7 +891,24 @@ function bg(){if(stream&&vid.readyState>=2&&vid.videoWidth){const vw=vid.videoWi
 function ptxt(s,x,y,size,col,al,maxW){s=String(s);let z=size;ctx.font=`${z}px ${FONT}`;while(maxW&&ctx.measureText(s).width>maxW&&z>12){z-=1;ctx.font=`${z}px ${FONT}`}ctx.textAlign=al||'left';ctx.fillStyle=col;ctx.fillText(s,x,y)}
 function sil(cx,cy,sc,col){ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(cx,cy-52*sc,40*sc,50*sc,0,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(cx-22*sc,cy-10*sc);ctx.lineTo(cx+22*sc,cy-10*sc);ctx.lineTo(cx+26*sc,cy+8*sc);
  ctx.bezierCurveTo(cx+80*sc,cy+18*sc,cx+108*sc,cy+40*sc,cx+112*sc,cy+92*sc);ctx.lineTo(cx-112*sc,cy+92*sc);ctx.bezierCurveTo(cx-108*sc,cy+40*sc,cx-80*sc,cy+18*sc,cx-26*sc,cy+8*sc);ctx.closePath();ctx.fill()}
-function card(p,tag,cap){const x=360,y=280,w=360,h=410,cx=x+w/2;
+function wrapT(s,maxW,size){ctx.font=`${size}px ${FONT}`;const L=[];let cur='';for(const x of s.split(' ')){const t=cur?cur+' '+x:x;if(ctx.measureText(t).width>maxW&&cur){L.push(cur);cur=x}else cur=t}L.push(cur);return L}
+function icon(kind,cx,cy,c){ctx.save();ctx.fillStyle=c;
+ if(kind==='movie'){rr(cx-95,cy-25,190,115,12);ctx.fill();ctx.save();ctx.translate(cx-95,cy-32);ctx.rotate(-.2);ctx.fillRect(0,-34,192,34);ctx.fillStyle='#fbf7ef';for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(14+i*46,-34);ctx.lineTo(36+i*46,-34);ctx.lineTo(22+i*46,0);ctx.lineTo(0+i*46,0);ctx.fill()}ctx.restore();
+  ctx.fillStyle='#fbf7ef';ctx.globalAlpha=.85;ctx.fillRect(cx-70,cy+5,140,8);ctx.fillRect(cx-70,cy+30,100,8);ctx.fillRect(cx-70,cy+55,120,8)}
+ else if(kind==='series'){rr(cx-110,cy-62,220,140,16);ctx.fill();ctx.fillStyle='#fbf7ef';ctx.beginPath();ctx.moveTo(cx-24,cy-30);ctx.lineTo(cx+34,cy+8);ctx.lineTo(cx-24,cy+46);ctx.fill();ctx.fillStyle=c;ctx.fillRect(cx-45,cy+90,90,12)}
+ else{ctx.fillStyle='#b8901f';rr(cx-140,cy-22,280,50,20);ctx.fill();ctx.fillStyle='#e9c44a';ctx.beginPath();ctx.ellipse(cx,cy+3,72,60,0,0,7);ctx.fill();ctx.lineWidth=6;ctx.strokeStyle='#8a6a10';ctx.stroke();ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(cx,cy+3,46,36,0,0,7);ctx.fill();ptxt('W',cx,cy+22,50,'#e9c44a','center')}
+ ctx.restore()}
+function itemCard(p,tag){const x=360,y=280,w=360,h=410,cx=x+w/2,[col,lab]=KC[p.kind],ph=getPh(p.n);
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=12;rr(x,y,w,h,30);ctx.fillStyle='#fbf7ef';ctx.fill();ctx.restore();
+ ctx.save();rr(x,y,w,h,30);ctx.clip();ctx.fillStyle=col;ctx.fillRect(x,y,w,66);
+ if(ph){const bh=196,sc=Math.max(w/ph.width,bh/ph.height);ctx.save();ctx.beginPath();ctx.rect(x,y+66,w,bh);ctx.clip();ctx.drawImage(ph,x+(w-ph.width*sc)/2,y+66+(bh-ph.height*sc)/2,ph.width*sc,ph.height*sc);ctx.restore()}
+ else icon(p.kind,cx,y+165,col);ctx.restore();ctx.lineWidth=6;ctx.strokeStyle=col;rr(x+3,y+3,w-6,h-6,28);ctx.stroke();
+ ptxt(lab,x+26,y+46,30,'#fff','left',170);ptxt(p.kind==='wwe'?'OVR '+p.r:'IMDb '+p.im.toFixed(1),x+w-26,y+46,32,'#ffe680','right',150);
+ let sz=44,L=wrapT(p.n.toUpperCase(),w-40,sz);if(L.length>2){sz=34;L=wrapT(p.n.toUpperCase(),w-40,sz)}L=L.slice(0,3);
+ const top=y+(L.length>2?292:L.length>1?306:330);L.forEach((t,i)=>ptxt(t,cx,top+i*(sz+4),sz,'#1b1b1b','center',w-30));
+ ptxt(p.kind==='wwe'?`${p.g} · ${p.info}`:`${p.y||''} · ${p.g} · ${p.info}`,cx,y+h-18,22,'#5c5c5c','center',w-30);
+ txt(tag||'',540,y+h+95,tag?104:62,'#f5e663','center',980)}
+function card(p,tag,cap){if(p&&p.kind)return itemCard(p,tag);const x=360,y=280,w=360,h=410,cx=x+w/2;
  if(!p){ctx.save();rr(x,y,w,h,30);ctx.fillStyle='rgba(10,20,14,.75)';ctx.fill();ctx.lineWidth=6;ctx.strokeStyle='rgba(255,255,255,.6)';ctx.stroke();ctx.clip();sil(cx,y+200,1.15,'rgba(255,255,255,.12)');ctx.restore();
   txt('?',cx,y+200,150,'#fff','center');txt(cap,540,y+h+85,62,'#fff','center',980);return}
  const r=p.r||0,tier=r>=85?['#fff1b8','#e8c25a','#9b6d1a','#3a2a00']:r>=75?['#ffffff','#cfd6dd','#7c8792','#1d2730']:['#f6d2b0','#c98a55','#7a4521','#2e1608'];
@@ -745,20 +930,20 @@ function card(p,tag,cap){const x=360,y=280,w=360,h=410,cx=x+w/2;
  txt(tag||'',540,y+h+95,tag?104:62,'#f5e663','center',980)}
 function mini(p,cx,cy,r){const ph=getPh(p.n);ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.clip();
  if(ph){const sc=Math.max(2*r/ph.width,2*r/ph.height);ctx.drawImage(ph,cx-ph.width*sc/2,cy-ph.height*sc/2,ph.width*sc,ph.height*sc)}
- else{const cc=p.c.filter(k=>CLUB[k]).slice(-1)[0];ctx.fillStyle=cc?CLUB[cc][1]:'#2f4a3a';ctx.fillRect(cx-r,cy-r,2*r,2*r);txt(p.n.split(' ').map(s=>s[0]).slice(0,2).join(''),cx,cy+r*.36,r*.95,'#fff','center',r*1.7)}
+ else{const cc=p.c.filter(k=>CLUB[k]).slice(-1)[0];ctx.fillStyle=p.col||(cc?CLUB[cc][1]:'#2f4a3a');ctx.fillRect(cx-r,cy-r,2*r,2*r);txt(p.n.split(' ').map(s=>s[0]).slice(0,2).join(''),cx,cy+r*.36,r*.95,'#fff','center',r*1.7)}
  ctx.restore();ctx.lineWidth=Math.max(3,r*.1);ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke()}
 const short=n=>n.length>16?n.split(' ').slice(-1)[0]:n;
 function team(i,q,C){const R=i===1;
- for(let k=0;k<5;k++){const yy=1470+k*100,sl=q?{pos:(k+1)+'.',p:S.quiz[i][k]||null}:S.teams[i][k];
+ for(let k=0;k<(q?5:S.teams[i].length);k++){const yy=1470+k*100,sl=q?{pos:(k+1)+'.',p:S.quiz[i][k]||null}:S.teams[i][k];
   const lw=txt(R?'- '+sl.pos:sl.pos+' -',R?1060:20,yy,84,'#fff',R?'right':'left',240);
   const ax=R?1060-lw-48:20+lw+48,ay=yy-28;ANCH[i][k]={x:ax,y:ay};
-  if(sl.p&&!(anim&&anim.i===i&&anim.k===k)){mini(sl.p,ax,ay,30);const nx=R?ax-42:ax+42,mw=520-lw-110;txt(short(sl.p.n),nx,yy-24,44,'#fff',R?'right':'left',mw);
+  if(sl.p&&!(anim&&anim.i===i&&anim.k===k)){mini(sl.p,ax,ay,30);const nx=R?ax-42:ax+42,mw=520-lw-110;txt(sl.p.kind?sl.p.n:short(sl.p.n),nx,yy-24,44,'#fff',R?'right':'left',mw);
    txt(q?C.f(C.v(sl.p)):'$'+sl.price,nx,yy+18,34,'#43e35a',R?'right':'left',mw)}}}
 function flyer(){if(!anim)return;const e=(performance.now()-anim.t0)/900;if(e>=1){anim=null;return}
  const a=ANCH[anim.i][anim.k];if(!a)return;const z=1-Math.pow(1-e,3),x=540+(a.x-540)*z,y=485+(a.y-485)*z,r=150+(30-150)*z;mini(anim.p,x,y,r)}
 function auctionInfo(){if(!S.cur||S.done)return;const now=Date.now();
  if(S.lead){txt(`${N(S.lead.i)} $${S.lead.amt}`,540,905,96,'#43e35a','center',900);
-  if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000)),o=1-S.lead.i,can=S.teams[o].some(x=>!x.p)&&S.money[o]-(S.teams[o].filter(x=>!x.p).length-1)>S.lead.amt;
+  if(endAt){const s=Math.max(0,Math.ceil((endAt-now)/1000)),o=1-S.lead.i,can=canTake(o,S.cur)&&S.money[o]-(S.teams[o].filter(x=>!x.p).length-1)>S.lead.amt;
    txt(can?`${N(o)}, go higher? ${s}`:(s<=1?'Going… going…':`Going in ${s}`),540,1000,66,'#fff','center',900)}}
  else if(!speaking){const nb=noBidAt?Math.max(0,Math.ceil((noBidAt-Date.now())/1000)):0;txt(`${N(open1())} to bid first`,540,910,72,'#fff','center',900);if(nb&&auto())txt(`No bid? Gone in ${nb}`,540,1000,58,'#ffb3b3','center',900)}}
 function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
@@ -768,7 +953,7 @@ function draw(){try{tick();bg();const q=mode==='quiz',C=CATS[$('cat').value];
  if(q){const F=flt(),L=S.last&&S.last.p;txt(C.t,540,150,92,'#f5e663','center',1040);
   txt(F.name==='Any'?'(Any player in the world!)':`(${F.name} players only!)`,540,235,56,'#fff','center',1000);
   card(L,L?C.f(C.v(L)):'',S.done?'Full time':'Say a name!');if(!S.done&&S.turn!==undefined&&!speaking)txt(`${N(S.turn)}'s turn`,540,930,80,'#43e35a','center',900)}
- else{txt('MUTED FOOTBALLER DRAFT',540,150,92,'#f5e663','center',1040);txt('(Highest Bid Takes It!)',540,235,60,'#fff','center');
+ else{txt(TITLES[bcat()],540,150,92,'#f5e663','center',1040);txt('(Highest Bid Takes It!)',540,235,60,'#fff','center');
   const a=Math.round(+$('amt').value)||0;card(S.cur,S.cur&&!S.lead&&a>1?'$'+a:'',S.done?'Full time':S.cur?S.cur.n:'Next player…');auctionInfo()}
  const R=q?result():null,val=i=>q?(['ucl','bdo','wc','rated'].includes($('cat').value)?String(R.s[i]):C.f(R.s[i])):'$'+S.money[i],y=1330;
  const w0=txt(N(0),20,y,100,'#fff','left',300);ctx.fillStyle='#fff';ctx.fillRect(20,y+18,w0,8);txt(val(0),20+w0+22,y,100,'#43e35a','left',498-w0);
@@ -795,7 +980,7 @@ function record(){if(rec){rec.stop();return}
 const sayP=t=>{$('msgP').textContent=t};
 function phTarget(){const v=$('phName').value.trim();if(v){const c=cands(v);return c.length===1||(c[0]&&norm(c[0].n)===norm(v))?c[0]:{n:title(v),c:[]}}return mode==='quiz'?S.last&&S.last.p:S.cur}
 function phUi(){const p=phTarget();$('phName').placeholder=(mode==='quiz'?S.last&&S.last.p:S.cur)?.n||'Type a player name';
- $('gimg').href='https://www.google.com/search?tbm=isch&q='+encodeURIComponent((p?p.n:'')+' footballer');$('gimg').textContent=p?`Find photos of ${p.n} on Google`:'Find photos on Google';
+ $('gimg').href='https://www.google.com/search?tbm=isch&q='+encodeURIComponent((p?p.n:'')+' '+(p?kindWord(p):'footballer'));$('gimg').textContent=p?`Find photos of ${p.n} on Google`:'Find photos on Google';
  let n=0;try{for(let i=0;i<localStorage.length;i++)if(localStorage.key(i).startsWith('fd-ph-'))n++}catch(e){}$('phCount').textContent=n?`${n} player photo${n>1?'s':''} saved.`:''}
 function photo(e){const f=e.target.files[0];e.target.value='';if(f)setPhoto(f)}
 function setPhoto(f){const p=phTarget();if(!p)return sayP('Type a player name, or put a player on the card first.');const say=sayP;
@@ -805,7 +990,7 @@ function setPhoto(f){const p=phTarget();if(!p)return sayP('Type a player name, o
 
 /* ---------- wiring ---------- */
 $('tBid').onclick=()=>{mode='bid';fresh()};$('tQuiz').onclick=()=>{mode='quiz';fresh()};
-['budget','pool','cat','club'].forEach(id=>$(id).addEventListener('change',fresh));
+['budget','pool','cat','club','bcat'].forEach(id=>$(id).addEventListener('change',fresh));
 ['n0','n1'].forEach(id=>{try{const v=localStorage.getItem('fd-'+id);if(v)$(id).value=v}catch(e){}
  $(id).addEventListener('input',()=>{try{localStorage.setItem('fd-'+id,$(id).value)}catch(e){}ui()})});
 $('nextBtn').onclick=nextPlayer;$('qVoiceBtn').onclick=quizStart;$('randBtn').onclick=randomChallenge;
