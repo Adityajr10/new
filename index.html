@@ -41,6 +41,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 details summary{cursor:pointer;color:var(--mute);margin-top:12px;min-height:32px}
 .hide{display:none!important}
 .note{font-size:14px;color:var(--mute);margin:6px 0 0}
+.btnlink{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;padding:8px 16px;border-radius:10px;background:var(--yel);color:#141a00;font-weight:700;text-decoration:none}
 .chk{display:flex;gap:10px;align-items:center;color:var(--ink);font-size:16px;margin:0}.chk input{width:22px;min-height:22px;flex:none}
 #how p{margin:0 0 8px}
 video#prev{width:100%;max-width:280px;border-radius:12px;margin-top:10px;display:block}
@@ -86,7 +87,6 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <details><summary>Secret bids: each types a bid without the other looking</summary>
    <div class="row" style="margin-top:8px"><div><label for="sb0" id="sbl0">Conor's bid</label><input id="sb0" type="password" inputmode="numeric"></div><div><label for="sb1" id="sbl1">Tom's bid</label><input id="sb1" type="password" inputmode="numeric"></div></div>
    <button class="go" id="reveal">Reveal bids</button></details>
-  <label for="photo" style="margin-top:14px">Add a photo of the player on the card (saved for next time)</label><input id="photo" type="file" accept="image/*">
   <p class="msg" id="msgB" role="status"></p>
  </section>
 
@@ -94,10 +94,16 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <label for="qn">Name that was said</label><input id="qn" list="names" placeholder="e.g. Courtois" autocomplete="off">
   <div id="qvRow" class="hide" style="margin-top:10px"><label for="qv" id="qvl">Height (cm)</label><input id="qv" type="number" inputmode="numeric"></div>
   <div class="row" style="margin-top:10px"><button class="buy" id="q0">Conor said it first</button><button class="buy" id="q1">Tom said it first</button></div>
-  <label for="photo2">Add a photo of the last pick (saved for next time)</label><input id="photo2" type="file" accept="image/*">
   <p class="msg" id="msgQ" role="status"></p>
  </section>
 
+ <section class="card"><h2>Player photos</h2>
+  <label for="phName">Player</label><input id="phName" list="names" placeholder="The player on the card" autocomplete="off">
+  <a class="btnlink" id="gimg" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=isch&q=footballer">Find photos on Google</a>
+  <div class="row" style="margin-top:12px"><div><label for="photo">Upload a saved photo</label><input id="photo" type="file" accept="image/*"></div><div><label for="pasteBox">Or paste a copied photo</label><input id="pasteBox" placeholder="Tap here, then Paste" autocomplete="off"></div></div>
+  <p class="note">On Google, press and hold a photo, tap <b>Copy</b>, come back and paste it in the box. Photos stay saved on this phone, so you only add each player once. Leave the name empty to use the player on the card. <span id="phCount"></span></p>
+  <p class="msg" id="msgP" role="status"></p>
+ </section>
  <section class="card"><h2>How to play</h2><div id="how"></div>
   <p class="note">Heights, ages and ratings come from a built-in list of about 190 players and are approximate. Anyone not on the list can still be added.</p></section>
 </div>
@@ -450,7 +456,7 @@ function ui(){const q=mode==='quiz';
   $('slots').innerHTML=S.teams[i].map((s,k)=>s.p?'':`<button data-k="${k}" class="${s.pos===grp(S.cur.pos)?'hint':''}">${s.pos}</button>`).join('')+'<button data-k="x">Cancel</button>'}
  const club=$('club').value,list=q&&club!=='ANY'?DB.filter(p=>p.c.includes(club)):DB;
  $('names').innerHTML=list.map(p=>`<option value="${p.n}"></option>`).join('');
- $('how').innerHTML=q?HOWQ:HOWB}
+ $('how').innerHTML=q?HOWQ:HOWB;phUi()}
 
 /* ---------- stage drawing ---------- */
 const vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.setAttribute('playsinline','');let stream=null;
@@ -524,9 +530,15 @@ function record(){if(rec){rec.stop();return}
  rec.onstop=()=>{const type=(rec&&rec.mimeType)||mt||'video/webm',u=URL.createObjectURL(new Blob(chunks,{type}));$('prev').src=u;$('dl').href=u;$('dl').download='footballer-draft.'+(type.includes('mp4')?'mp4':'webm');
   $('out').classList.remove('hide');rec=null;$('recBtn').textContent='Record';$('camMsg').textContent='Recording finished. Watch it below or tap Save the video.'};
  rec.start(1000);$('recBtn').textContent='Stop recording';$('camMsg').textContent='Recording the stage…'}
-function photo(e){const f=e.target.files[0],p=mode==='quiz'?S.last&&S.last.p:S.cur;e.target.value='';if(!f)return;if(!p)return say('Put a player on the card first');
+const sayP=t=>{$('msgP').textContent=t};
+function phTarget(){const v=$('phName').value.trim();if(v){const c=cands(v);return c.length===1||(c[0]&&norm(c[0].n)===norm(v))?c[0]:{n:title(v),c:[]}}return mode==='quiz'?S.last&&S.last.p:S.cur}
+function phUi(){const p=phTarget();$('phName').placeholder=(mode==='quiz'?S.last&&S.last.p:S.cur)?.n||'Type a player name';
+ $('gimg').href='https://www.google.com/search?tbm=isch&q='+encodeURIComponent((p?p.n:'')+' footballer');$('gimg').textContent=p?`Find photos of ${p.n} on Google`:'Find photos on Google';
+ let n=0;try{for(let i=0;i<localStorage.length;i++)if(localStorage.key(i).startsWith('fd-ph-'))n++}catch(e){}$('phCount').textContent=n?`${n} player photo${n>1?'s':''} saved.`:''}
+function photo(e){const f=e.target.files[0];e.target.value='';if(f)setPhoto(f)}
+function setPhoto(f){const p=phTarget();if(!p)return sayP('Type a player name, or put a player on the card first.');const say=sayP;
  const img=new Image();img.onload=()=>{const sc=Math.min(1,360/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-  const d=c.toDataURL('image/jpeg',.82),im=new Image();im.onload=()=>{photos[p.n]=im};im.src=d;try{localStorage.setItem('fd-ph-'+norm(p.n),d);say(`Photo saved for ${p.n}.`)}catch(x){say('Photo added for this game (phone storage is full, so it won\'t be kept).')}};
+  const d=c.toDataURL('image/jpeg',.82),im=new Image();im.onload=()=>{photos[p.n]=im};im.src=d;try{localStorage.setItem('fd-ph-'+norm(p.n),d);say(`Photo saved for ${p.n}.`);$('phName').value='';phUi()}catch(x){say('Photo added for this game (phone storage is full, so it won\'t be kept).')}};img.onerror=()=>say('That file is not a photo the phone can read.');
  img.src=URL.createObjectURL(f)}
 
 /* ---------- wiring ---------- */
@@ -541,7 +553,9 @@ $('sell0').onclick=()=>sell(0);$('sell1').onclick=()=>sell(1);$('q0').onclick=()
 $('plus').onclick=()=>{$('amt').value=(Math.round(+$('amt').value)||0)+1};$('minus').onclick=()=>{$('amt').value=Math.max(1,(Math.round(+$('amt').value)||1)-1)};
 $('slots').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k===undefined)return;if(k==='x'){S.pending=null;ui();return}place(+k)};
 $('undoBtn').onclick=()=>undo();$('newBtn').onclick=fresh;$('camBtn').onclick=cam;$('recBtn').onclick=record;
-$('photo').onchange=photo;$('photo2').onchange=photo;
+$('photo').onchange=photo;$('phName').addEventListener('input',phUi);
+$('pasteBox').addEventListener('paste',e=>{e.preventDefault();const it=[...((e.clipboardData&&e.clipboardData.items)||[])].find(i=>i.type.startsWith('image/'));$('pasteBox').value='';
+ if(!it)return sayP('No photo was copied. On Google, press and hold a photo and tap Copy first.');setPhoto(it.getAsFile())});
 fresh();if(document.fonts&&document.fonts.load)document.fonts.load(`80px Anton`).catch(()=>{});
 requestAnimationFrame(draw);
 }
