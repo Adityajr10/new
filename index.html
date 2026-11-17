@@ -413,16 +413,26 @@ const ALIAS={cr7:'Cristiano Ronaldo',vini:'Vinícius Júnior',vinny:'Vinícius J
 const KEY=(()=>{const m={};const add=(k,p)=>{if(!k||k.length<3)return;(m[k]=m[k]||[]).includes(p)||m[k].push(p)};
  for(const p of DB){const t=norm(p.n).split(' ');add(t.join(' '),p);add(t[t.length-1],p);if(t.length>1){add(t[0],p);if(t.length>2)add(t.slice(-2).join(' '),p)}}
  for(const[k,v]of Object.entries(ALIAS)){const p=v&&DB.find(x=>x.n===v);if(p)m[k]=[p]}return m})();
-function findSpoken(w){const F=flt();let best=null;
- for(let len=3;len>=1;len--)for(let j=0;j+len<=w.length;j++){const k=w.slice(j,j+len).join(' '),c=KEY[k];if(!c)continue;
-  let pick=c.length===1?c[0]:(c.filter(F.ok).length===1?c.filter(F.ok)[0]:c.filter(p=>owner(p.n)<0&&F.ok(p))[0]||null);
-  if(len===1&&c.length>1&&!pick)continue;if(pick&&(!best||len>best.len))best={p:pick,len}}
- return best&&best.p}
+const phon=t=>norm(t).replace(/ph/g,'f').replace(/th/g,'t').replace(/ck|q/g,'k').replace(/z/g,'s').replace(/w/g,'v').replace(/y/g,'i').replace(/([a-z])\1+/g,'$1').replace(/([a-z])h/g,'$1').replace(/e\b/g,'').replace(/\s+/g,' ').trim();
+function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let pr=Array.from({length:n+1},(_,j)=>j);
+ for(let i=1;i<=m;i++){const cu=[i];for(let j=1;j<=n;j++)cu[j]=Math.min(pr[j]+1,cu[j-1]+1,pr[j-1]+(a[i-1]===b[j-1]?0:1));pr=cu}return pr[n]}
+const KP=Object.entries(KEY).map(([k,ps])=>({k,f:phon(k),ps,wc:k.split(' ').length}));
+function matchWords(w){const F=flt();let best=null;
+ for(let len=3;len>=1;len--)for(let j=0;j+len<=w.length;j++){const win=w.slice(j,j+len).join(' '),pf=phon(win);if(pf.length<3)continue;
+  for(const e of KP){if(Math.abs(e.f.length-pf.length)>3)continue;const d=lev(pf,e.f),L=Math.max(pf.length,e.f.length),sim=1-d/L;
+   const need=L<=4?1:L<=6?.8:.74;if(sim<need)continue;
+   const free=e.ps.filter(p=>owner(p.n)<0),fit=free.filter(F.ok);let p=fit[0]||free[0]||e.ps[0];
+   if(e.ps.length>1&&fit.length!==1&&e.wc===1&&e.k.split(' ').length===1&&sim<1)continue;
+   const score=sim+(e.wc>1?.06:0)+(fit.length?.05:0)+(owner(p.n)<0?.04:0);
+   if(!best||score>best.score)best={p,score,heard:win}}}
+ return best}
 function runQuiz(idx,alts){const ws=alts.map(t=>norm(t).split(' ').filter(Boolean)),from=Math.min(used[idx]||0,ws[0].length);used[idx]=ws[0].length;
- if(speaking||Date.now()<muteUntil||mode!=='quiz'||S.done||S.turn===undefined)return;
- let p=null;for(const w of ws){p=findSpoken(w.slice(Math.min(from,w.length)));if(p)break}
- if(!p){const heard=ws[0].slice(from).join(' ');if(heard.split(' ').length>=1&&heard.length>2)say(`Heard "${heard}" but couldn't match a player. Try the full name.`);return}
- addPick(S.turn,p)}
+ if(mode!=='quiz'||S.done||S.turn===undefined)return;
+ const heard=ws[0].slice(from).join(' ');if(heard)$('qMic').textContent=`Heard: "${heard}"`;
+ let m=null;for(const w of ws){const r=matchWords(w.slice(Math.min(from,w.length)));if(r&&(!m||r.score>m.score))m=r}
+ if(!m){if(!speaking&&heard.length>2)say(`Couldn't match "${heard}" to a player. Try the full name.`);return}
+ const o=owner(m.p.n);if(o>=0){if(S.last&&S.last.p.n===m.p.n)return;if(!speaking){say(`${m.p.n} already belongs to ${N(o)}. Say someone else.`);speak(`${m.p.n} is already taken. ${N(S.turn)}, say someone else.`)}return}
+ addPick(S.turn,m.p)}
 function quizStart(){if(mode!=='quiz')return;if(S.done)fresh();const C=CATS[$('cat').value],F=flt();S.turn=S.turn??(Math.random()<.5?0:1);ui();listen();
  speak(`${C.t.toLowerCase()}${F.name==='Any'?'':', '+F.name+' players'}. ${N(S.turn)} goes first.`);say(`${N(S.turn)} goes first. Say a player's name.`)}
 function randomChallenge(){const ck=Object.keys(CATS),fo=[...$('club').options].map(o=>o.value).filter(v=>v!=='ANY');
