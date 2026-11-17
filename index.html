@@ -70,7 +70,8 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
   <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Aditya" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Anmol" maxlength="12"></div></div>
   <div id="setBid" class="row"><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
    <div><label for="pool">Players to auction</label><select id="pool"><option value="now">Current stars</option><option value="old">Legends</option><option value="all">Everyone</option></select></div></div>
-  <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team</label><select id="club"></select></div></div>
+  <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team or country</label><select id="club"></select></div></div>
+  <button class="go" id="randBtn" style="margin-bottom:10px">Random challenge</button>
   <p class="note">Changing the mode, budget, pool, challenge or team starts a new game.</p>
  </section>
 
@@ -91,9 +92,12 @@ a.dl{color:var(--yel);display:inline-block;margin-top:8px}
  </section>
 
  <section class="card hide" id="pQuiz"><h2>Name race desk</h2>
-  <label for="qn">Name that was said</label><input id="qn" list="names" placeholder="e.g. Courtois" autocomplete="off">
+  <div class="bar" style="margin-top:0;margin-bottom:10px"><button class="go" id="qVoiceBtn">Start voice game</button><button id="qPass">Skip this turn</button></div>
+  <p class="note" id="qMic">Take turns saying a player's name out loud. The game recognises him, adds his number to your score and passes the turn.</p>
+  <label for="qn" style="margin-top:10px">Or type the name</label><input id="qn" list="names" placeholder="e.g. Courtois" autocomplete="off">
   <div id="qvRow" class="hide" style="margin-top:10px"><label for="qv" id="qvl">Height (cm)</label><input id="qv" type="number" inputmode="numeric"></div>
-  <div class="row" style="margin-top:10px"><button class="buy" id="q0">Conor said it first</button><button class="buy" id="q1">Tom said it first</button></div>
+  <div class="row" style="margin-top:10px"><button class="buy" id="q0">Give to Aditya</button><button class="buy" id="q1">Give to Anmol</button></div>
+  <button id="qAllow" class="hide">Allow him anyway</button>
   <p class="msg" id="msgQ" role="status"></p>
  </section>
 
@@ -116,229 +120,238 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d'),W=1080,H=1920,YEAR=new Date().getFullYear();
 const FONT='Anton, Impact, sans-serif';
 const CLUB={RMA:['Real Madrid','#c9a43a'],BAR:['Barcelona','#a50044'],MCI:['Man City','#5fa8dc'],MUN:['Man United','#da291c'],LIV:['Liverpool','#c8102e'],ARS:['Arsenal','#e30613'],CHE:['Chelsea','#034694'],TOT:['Tottenham','#1b2a6b'],BAY:['Bayern Munich','#dc052d'],DOR:['Dortmund','#d4b800'],PSG:['PSG','#0b3d73'],JUV:['Juventus','#333333'],INT:['Inter','#0068a8'],MIL:['AC Milan','#d6111b'],ATM:['Atlético Madrid','#cb3524'],NAP:['Napoli','#12a0d7'],AJA:['Ajax','#d2122e']};
-// name|position|height cm|rating|birth year|clubs|L = retired
-const RAW=`Cristiano Ronaldo|ST|187|93|1985|SPO MUN RMA JUV ALN
-Kylian Mbappé|ST|178|91|1998|MON PSG RMA
-Vinícius Júnior|LW|176|90|2000|RMA
-Jude Bellingham|CM|186|89|2003|BIR DOR RMA
-Federico Valverde|CM|182|88|1998|RMA
-Aurélien Tchouaméni|CM|187|85|2000|MON RMA
-Eduardo Camavinga|CM|182|84|2002|REN RMA
-Thibaut Courtois|GK|200|89|1992|ATM CHE RMA
-Antonio Rüdiger|CB|190|86|1993|ROM CHE RMA
-Éder Militão|CB|186|85|1998|POR RMA
-Dean Huijsen|CB|197|82|2005|JUV BOU RMA
-Trent Alexander-Arnold|RB|180|86|1998|LIV RMA
-Rodrygo|RW|174|84|2001|SAN RMA
-Arda Güler|AM|176|83|2005|RMA
-Dani Carvajal|RB|173|85|1992|RMA
-Ferland Mendy|LB|180|81|1995|LYO RMA
-Brahim Díaz|AM|170|81|1999|MCI MIL RMA
-Andriy Lunin|GK|191|80|1999|RMA
-Luka Modrić|CM|172|91|1985|TOT RMA MIL
-Karim Benzema|ST|185|91|1987|LYO RMA ITT
-Sergio Ramos|CB|184|90|1986|SEV RMA PSG
-Casemiro|CM|185|88|1992|RMA MUN
-Keylor Navas|GK|185|87|1986|RMA PSG
-Toni Kroos|CM|183|90|1990|BAY RMA|L
-Raphaël Varane|CB|191|87|1993|RMA MUN|L
-Marcelo|LB|174|88|1988|RMA|L
-Gareth Bale|RW|185|89|1989|TOT RMA|L
-Zinedine Zidane|AM|185|95|1972|JUV RMA|L
-Ronaldo Nazário|ST|183|96|1976|BAR INT RMA MIL|L
-Iker Casillas|GK|185|91|1981|RMA POR|L
-Raúl|ST|180|90|1977|RMA|L
-Roberto Carlos|LB|168|90|1973|INT RMA|L
-David Beckham|RM|180|89|1975|MUN RMA MIL PSG|L
-Luís Figo|RW|180|91|1972|BAR RMA INT|L
-Fabio Cannavaro|CB|176|90|1973|INT JUV RMA|L
-Pepe|CB|188|87|1983|POR RMA|L
-Kaká|AM|186|93|1982|MIL RMA|L
-Michael Owen|ST|173|88|1979|LIV RMA MUN|L
-Alfredo Di Stéfano|ST|178|95|1926|RMA|L
-Ferenc Puskás|ST|172|94|1927|RMA|L
-Lionel Messi|RW|170|96|1987|BAR PSG MIA
-Lamine Yamal|RW|180|90|2007|BAR
-Robert Lewandowski|ST|185|90|1988|DOR BAY BAR
-Raphinha|LW|176|87|1996|LEE BAR
-Pedri|CM|174|88|2002|BAR
-Gavi|CM|173|83|2004|BAR
-Frenkie de Jong|CM|181|86|1997|AJA BAR
-Pau Cubarsí|CB|184|83|2007|BAR
-Ronald Araújo|CB|188|84|1999|BAR
-Jules Koundé|RB|180|85|1998|SEV BAR
-Alejandro Balde|LB|175|81|2003|BAR
-Marc-André ter Stegen|GK|187|88|1992|BAR
-Joan García|GK|194|83|2001|ESP BAR
-Dani Olmo|AM|179|83|1998|LEI BAR
-Fermín López|AM|174|81|2003|BAR
-Ferran Torres|FW|184|80|2000|MCI BAR
-Marcus Rashford|LW|180|82|1997|MUN BAR
-Neymar|LW|175|91|1992|SAN BAR PSG
-Luis Suárez|ST|182|92|1987|AJA LIV BAR ATM MIA
-Sergio Busquets|CM|189|88|1988|BAR MIA|L
-Xavi|CM|170|92|1980|BAR|L
-Andrés Iniesta|CM|171|93|1984|BAR|L
-Carles Puyol|CB|178|89|1978|BAR|L
-Gerard Piqué|CB|194|88|1987|MUN BAR|L
-Ronaldinho|AM|182|94|1980|PSG BAR MIL|L
-Samuel Eto'o|ST|180|89|1981|BAR INT CHE|L
-Thierry Henry|ST|188|93|1977|JUV ARS BAR|L
-Dani Alves|RB|172|88|1983|SEV BAR JUV PSG|L
-Víctor Valdés|GK|183|85|1982|BAR MUN|L
-Zlatan Ibrahimović|ST|195|91|1981|AJA JUV INT BAR MIL PSG MUN|L
-Johan Cruyff|FW|178|96|1947|AJA BAR|L
-Diego Maradona|AM|165|97|1960|BAR NAP|L
-Rivaldo|AM|186|91|1972|BAR MIL|L
-Erling Haaland|ST|195|91|2000|DOR MCI
-Rodri|CM|191|90|1996|ATM MCI
-Phil Foden|AM|171|86|2000|MCI
-Bernardo Silva|CM|173|86|1994|MON MCI
-Rúben Dias|CB|187|87|1997|MCI
-Joško Gvardiol|CB|185|85|2002|MCI
-Gianluigi Donnarumma|GK|196|89|1999|MIL PSG MCI
-Ederson|GK|188|86|1993|MCI
-Omar Marmoush|ST|183|83|1999|MCI
-Jérémy Doku|LW|173|83|2002|MCI
-Rayan Cherki|AM|177|84|2003|LYO MCI
-Tijjani Reijnders|CM|185|85|1998|MIL MCI
-John Stones|CB|188|84|1994|EVE MCI
-Kyle Walker|RB|183|84|1990|TOT MCI MIL
-Jack Grealish|LW|180|83|1995|MCI EVE
-Kevin De Bruyne|CM|181|91|1991|CHE MCI NAP
-Sergio Agüero|ST|173|90|1988|ATM MCI BAR|L
-Vincent Kompany|CB|190|88|1986|MCI|L
-Yaya Touré|CM|188|89|1983|BAR MCI|L
-David Silva|AM|170|89|1986|MCI|L
-Bruno Fernandes|AM|179|87|1994|MUN
-Bryan Mbeumo|RW|171|84|1999|MUN
-Matheus Cunha|FW|184|83|1999|MUN
-Benjamin Šeško|ST|195|81|2003|MUN
-Kobbie Mainoo|CM|175|80|2005|MUN
-Lisandro Martínez|CB|175|84|1998|AJA MUN
-Harry Maguire|CB|194|80|1993|MUN
-André Onana|GK|190|82|1996|AJA INT MUN
-Paul Pogba|CM|191|87|1993|MUN JUV
-Wayne Rooney|ST|176|91|1985|EVE MUN|L
-Rio Ferdinand|CB|189|89|1978|MUN|L
-Nemanja Vidić|CB|189|89|1981|MUN INT|L
-Peter Schmeichel|GK|191|91|1963|MUN|L
-Edwin van der Sar|GK|197|89|1970|AJA JUV MUN|L
-Ryan Giggs|LW|179|89|1973|MUN|L
-Paul Scholes|CM|168|89|1974|MUN|L
-Roy Keane|CM|178|89|1971|MUN|L
-Eric Cantona|ST|187|90|1966|MUN|L
-Robin van Persie|ST|187|89|1983|ARS MUN|L
-Mohamed Salah|RW|175|91|1992|CHE ROM LIV
-Virgil van Dijk|CB|193|90|1991|LIV
-Alisson|GK|193|89|1992|ROM LIV
-Florian Wirtz|AM|177|88|2003|LEV LIV
-Alexander Isak|ST|192|87|1999|NEW LIV
-Hugo Ekitiké|ST|190|84|2002|PSG LIV
-Dominik Szoboszlai|CM|186|84|2000|LIV
-Alexis Mac Allister|CM|174|86|1998|LIV
-Ryan Gravenberch|CM|190|85|2002|AJA BAY LIV
-Ibrahima Konaté|CB|194|85|1999|LIV
-Cody Gakpo|LW|193|84|1999|LIV
-Andy Robertson|LB|178|84|1994|LIV
-Darwin Núñez|ST|187|81|1999|LIV
-Sadio Mané|LW|174|89|1992|LIV BAY
-Roberto Firmino|FW|181|86|1991|LIV
-Steven Gerrard|CM|183|91|1980|LIV|L
-Fernando Torres|ST|186|89|1984|ATM LIV CHE MIL|L
-Kenny Dalglish|ST|173|92|1951|LIV|L
-Jamie Carragher|CB|185|85|1978|LIV|L
-Bukayo Saka|RW|178|88|2001|ARS
-Martin Ødegaard|AM|178|87|1998|RMA ARS
-Declan Rice|CM|185|87|1999|ARS
-William Saliba|CB|192|87|2001|ARS
-Gabriel Magalhães|CB|190|86|1997|ARS
-David Raya|GK|183|86|1995|ARS
-Viktor Gyökeres|ST|187|86|1998|ARS
-Eberechi Eze|AM|173|84|1998|ARS
-Martín Zubimendi|CM|181|85|1999|ARS
-Kai Havertz|FW|193|83|1999|CHE ARS
-Gabriel Martinelli|LW|178|82|2001|ARS
-Dennis Bergkamp|ST|188|92|1969|AJA INT ARS|L
-Patrick Vieira|CM|193|90|1976|MIL ARS JUV INT MCI|L
-Tony Adams|CB|191|87|1966|ARS|L
-Petr Čech|GK|196|90|1982|CHE ARS|L
-Cesc Fàbregas|CM|180|88|1987|ARS BAR CHE|L
-Robert Pirès|LW|185|87|1973|ARS|L
-Cole Palmer|AM|189|87|2002|MCI CHE
-Enzo Fernández|CM|178|85|2001|CHE
-Moisés Caicedo|CM|178|86|2001|CHE
-Reece James|RB|182|83|1999|CHE
-João Pedro|ST|182|83|2001|CHE
-Robert Sánchez|GK|197|80|1997|CHE
-N'Golo Kanté|CM|168|89|1991|LEI CHE
-Frank Lampard|CM|184|91|1978|CHE MCI|L
-John Terry|CB|187|90|1980|CHE|L
-Didier Drogba|ST|189|91|1978|CHE|L
-Eden Hazard|LW|175|91|1991|CHE RMA|L
-Ashley Cole|LB|176|88|1980|ARS CHE ROM|L
-Claude Makélélé|CM|174|88|1973|RMA CHE PSG|L
-Harry Kane|ST|188|91|1993|TOT BAY
-Son Heung-min|LW|183|87|1992|TOT
-Micky van de Ven|CB|193|83|2001|TOT
-Cristian Romero|CB|185|85|1998|TOT
-Guglielmo Vicario|GK|194|83|1996|TOT
-James Maddison|AM|175|82|1996|TOT
-Peter Crouch|ST|201|80|1981|TOT LIV|L
-Manuel Neuer|GK|193|90|1986|BAY
-Thomas Müller|FW|185|88|1989|BAY
-Jamal Musiala|AM|184|88|2003|BAY
-Joshua Kimmich|CM|177|88|1995|BAY
-Michael Olise|RW|184|87|2001|BAY
-Dayot Upamecano|CB|186|84|1998|BAY
-Alphonso Davies|LB|183|83|2000|BAY
-Luis Díaz|LW|180|86|1997|POR LIV BAY
-Arjen Robben|RW|180|91|1984|CHE RMA BAY|L
-Franck Ribéry|LW|170|90|1983|BAY|L
-Philipp Lahm|RB|170|90|1983|BAY|L
-Oliver Kahn|GK|188|91|1969|BAY|L
-Bastian Schweinsteiger|CM|183|89|1984|BAY MUN|L
-Ousmane Dembélé|RW|178|90|1997|DOR BAR PSG
-Vitinha|CM|172|88|2000|PSG
-João Neves|CM|174|86|2004|PSG
-Achraf Hakimi|RB|181|88|1998|RMA DOR INT PSG
-Marquinhos|CB|183|87|1994|ROM PSG
-Nuno Mendes|LB|180|87|2002|PSG
-Khvicha Kvaratskhelia|LW|183|87|2001|NAP PSG
-Désiré Doué|RW|181|85|2005|REN PSG
-Marco Reus|AM|180|87|1989|DOR
-Gianluigi Buffon|GK|192|92|1978|JUV PSG|L
-Alessandro Del Piero|FW|174|91|1974|JUV|L
-Andrea Pirlo|CM|177|91|1979|INT MIL JUV|L
-Giorgio Chiellini|CB|187|88|1984|JUV|L
-Paolo Maldini|CB|186|93|1968|MIL|L
-Andriy Shevchenko|ST|183|91|1976|MIL CHE|L
-Kenan Yıldız|FW|185|83|2005|JUV
-Dušan Vlahović|ST|190|82|2000|JUV
-Lautaro Martínez|ST|174|88|1997|INT
-Marcus Thuram|ST|192|85|1997|INT
-Nicolò Barella|CM|172|86|1997|INT
-Rafael Leão|LW|188|85|1999|MIL
-Victor Osimhen|ST|186|86|1998|NAP GAL
-Scott McTominay|CM|191|85|1996|MUN NAP
-Antoine Griezmann|FW|176|87|1991|ATM BAR
-Jan Oblak|GK|188|87|1993|ATM
-Julián Álvarez|ST|170|87|2000|MCI ATM
-Koke|CM|176|83|1992|ATM
-Pelé|FW|173|98|1940|SAN|L`;
-const DB=RAW.trim().split('\n').map(l=>{const[n,pos,h,r,y,c,L]=l.split('|');return{n,pos,h:+h,r:+r,y:+y,c:c.split(' '),L:L==='L'}});
+// name|position|height cm|rating|birth year|clubs|L = retired|nation|UCL titles|Ballon d'Ors|World Cups  (checked to Nov 2026)
+const RAW=`Cristiano Ronaldo|ST|187|93|1985|SPO MUN RMA JUV ALN||POR|5|5|0
+Kylian Mbappé|ST|178|91|1998|MON PSG RMA||FRA|0|0|1
+Vinícius Júnior|LW|176|90|2000|RMA||BRA|2|0|0
+Jude Bellingham|CM|186|89|2003|BIR DOR RMA||ENG|1|0|0
+Federico Valverde|CM|182|88|1998|RMA||URU|2|0|0
+Aurélien Tchouaméni|CM|187|85|2000|MON RMA||FRA|1|0|0
+Eduardo Camavinga|CM|182|84|2002|REN RMA||FRA|2|0|0
+Thibaut Courtois|GK|200|89|1992|ATM CHE RMA||BEL|2|0|0
+Antonio Rüdiger|CB|190|86|1993|ROM CHE RMA||GER|2|0|0
+Éder Militão|CB|186|85|1998|POR RMA||BRA|2|0|0
+Dean Huijsen|CB|197|82|2005|JUV BOU RMA||ESP|0|0|0
+Trent Alexander-Arnold|RB|180|86|1998|LIV RMA||ENG|1|0|0
+Rodrygo|RW|174|84|2001|SAN RMA||BRA|2|0|0
+Arda Güler|AM|176|83|2005|RMA||TUR|1|0|0
+Dani Carvajal|RB|173|85|1992|RMA||ESP|6|0|0
+Ferland Mendy|LB|180|81|1995|LYO RMA||FRA|2|0|0
+Brahim Díaz|AM|170|81|1999|MCI MIL RMA||MAR|1|0|0
+Andriy Lunin|GK|191|80|1999|RMA||UKR|2|0|0
+Luka Modrić|CM|172|91|1985|TOT RMA MIL||CRO|6|1|0
+Karim Benzema|ST|185|91|1987|LYO RMA ITT||FRA|5|1|0
+Sergio Ramos|CB|184|90|1986|SEV RMA PSG||ESP|4|0|1
+Casemiro|CM|185|88|1992|RMA MUN||BRA|5|0|0
+Keylor Navas|GK|185|87|1986|RMA PSG||CRC|3|0|0
+Toni Kroos|CM|183|90|1990|BAY RMA|L|GER|6|0|1
+Raphaël Varane|CB|191|87|1993|RMA MUN|L|FRA|4|0|1
+Marcelo|LB|174|88|1988|RMA|L|BRA|5|0|0
+Gareth Bale|RW|185|89|1989|TOT RMA|L|WAL|5|0|0
+Zinedine Zidane|AM|185|95|1972|JUV RMA|L|FRA|1|1|1
+Ronaldo Nazário|ST|183|96|1976|BAR INT RMA MIL|L|BRA|0|2|2
+Iker Casillas|GK|185|91|1981|RMA POR|L|ESP|3|0|1
+Raúl|ST|180|90|1977|RMA|L|ESP|3|0|0
+Roberto Carlos|LB|168|90|1973|INT RMA|L|BRA|3|0|1
+David Beckham|RM|180|89|1975|MUN RMA MIL PSG|L|ENG|1|0|0
+Luís Figo|RW|180|91|1972|BAR RMA INT|L|POR|1|1|0
+Fabio Cannavaro|CB|176|90|1973|INT JUV RMA|L|ITA|0|1|1
+Pepe|CB|188|87|1983|POR RMA|L|POR|3|0|0
+Kaká|AM|186|93|1982|MIL RMA|L|BRA|1|1|1
+Michael Owen|ST|173|88|1979|LIV RMA MUN|L|ENG|0|1|0
+Alfredo Di Stéfano|ST|178|95|1926|RMA|L|ARG|5|2|0
+Ferenc Puskás|ST|172|94|1927|RMA|L|HUN|3|0|0
+Lionel Messi|RW|170|96|1987|BAR PSG MIA||ARG|4|8|1
+Lamine Yamal|RW|180|90|2007|BAR||ESP|0|0|1
+Robert Lewandowski|ST|185|90|1988|DOR BAY BAR||POL|1|0|0
+Raphinha|LW|176|87|1996|LEE BAR||BRA|0|0|0
+Pedri|CM|174|88|2002|BAR||ESP|0|0|1
+Gavi|CM|173|83|2004|BAR||ESP|0|0|1
+Frenkie de Jong|CM|181|86|1997|AJA BAR||NED|0|0|0
+Pau Cubarsí|CB|184|83|2007|BAR||ESP|0|0|1
+Ronald Araújo|CB|188|84|1999|BAR||URU|0|0|0
+Jules Koundé|RB|180|85|1998|SEV BAR||FRA|0|0|0
+Alejandro Balde|LB|175|81|2003|BAR||ESP|0|0|0
+Marc-André ter Stegen|GK|187|88|1992|BAR||GER|1|0|0
+Joan García|GK|194|83|2001|ESP BAR||ESP|0|0|1
+Dani Olmo|AM|179|83|1998|LEI BAR||ESP|0|0|1
+Fermín López|AM|174|81|2003|BAR||ESP|0|0|0
+Ferran Torres|FW|184|80|2000|MCI BAR||ESP|0|0|1
+Marcus Rashford|LW|180|82|1997|MUN BAR||ENG|0|0|0
+Neymar|LW|175|91|1992|SAN BAR PSG||BRA|1|0|0
+Luis Suárez|ST|182|92|1987|AJA LIV BAR ATM MIA||URU|1|0|0
+Sergio Busquets|CM|189|88|1988|BAR MIA|L|ESP|3|0|1
+Xavi|CM|170|92|1980|BAR|L|ESP|4|0|1
+Andrés Iniesta|CM|171|93|1984|BAR|L|ESP|4|0|1
+Carles Puyol|CB|178|89|1978|BAR|L|ESP|3|0|1
+Gerard Piqué|CB|194|88|1987|MUN BAR|L|ESP|4|0|1
+Ronaldinho|AM|182|94|1980|PSG BAR MIL|L|BRA|1|1|1
+Samuel Eto'o|ST|180|89|1981|BAR INT CHE|L|CMR|3|0|0
+Thierry Henry|ST|188|93|1977|JUV ARS BAR|L|FRA|1|0|1
+Dani Alves|RB|172|88|1983|SEV BAR JUV PSG|L|BRA|3|0|0
+Víctor Valdés|GK|183|85|1982|BAR MUN|L|ESP|3|0|1
+Zlatan Ibrahimović|ST|195|91|1981|AJA JUV INT BAR MIL PSG MUN|L|SWE|0|0|0
+Johan Cruyff|FW|178|96|1947|AJA BAR|L|NED|3|3|0
+Diego Maradona|AM|165|97|1960|BAR NAP|L|ARG|0|0|1
+Rivaldo|AM|186|91|1972|BAR MIL|L|BRA|1|1|1
+Erling Haaland|ST|195|91|2000|DOR MCI||NOR|1|0|0
+Rodri|CM|191|90|1996|ATM MCI||ESP|1|1|1
+Phil Foden|AM|171|86|2000|MCI||ENG|1|0|0
+Bernardo Silva|CM|173|86|1994|MON MCI||POR|1|0|0
+Rúben Dias|CB|187|87|1997|MCI||POR|1|0|0
+Joško Gvardiol|CB|185|85|2002|MCI||CRO|0|0|0
+Gianluigi Donnarumma|GK|196|89|1999|MIL PSG MCI||ITA|1|0|0
+Ederson|GK|188|86|1993|MCI||BRA|1|0|0
+Omar Marmoush|ST|183|83|1999|MCI||EGY|0|0|0
+Jérémy Doku|LW|173|83|2002|MCI||BEL|0|0|0
+Rayan Cherki|AM|177|84|2003|LYO MCI||FRA|0|0|0
+Tijjani Reijnders|CM|185|85|1998|MIL MCI||NED|0|0|0
+John Stones|CB|188|84|1994|EVE MCI||ENG|1|0|0
+Kyle Walker|RB|183|84|1990|TOT MCI MIL||ENG|1|0|0
+Jack Grealish|LW|180|83|1995|MCI EVE||ENG|1|0|0
+Kevin De Bruyne|CM|181|91|1991|CHE MCI NAP||BEL|1|0|0
+Sergio Agüero|ST|173|90|1988|ATM MCI BAR|L|ARG|0|0|0
+Vincent Kompany|CB|190|88|1986|MCI|L|BEL|0|0|0
+Yaya Touré|CM|188|89|1983|BAR MCI|L|CIV|1|0|0
+David Silva|AM|170|89|1986|MCI|L|ESP|0|0|0
+Bruno Fernandes|AM|179|87|1994|MUN||POR|0|0|0
+Bryan Mbeumo|RW|171|84|1999|MUN||CMR|0|0|0
+Matheus Cunha|FW|184|83|1999|MUN||BRA|0|0|0
+Benjamin Šeško|ST|195|81|2003|MUN||SVN|0|0|0
+Kobbie Mainoo|CM|175|80|2005|MUN||ENG|0|0|0
+Lisandro Martínez|CB|175|84|1998|AJA MUN||ARG|0|0|1
+Harry Maguire|CB|194|80|1993|MUN||ENG|0|0|0
+André Onana|GK|190|82|1996|AJA INT MUN||CMR|0|0|0
+Paul Pogba|CM|191|87|1993|MUN JUV||FRA|0|0|1
+Wayne Rooney|ST|176|91|1985|EVE MUN|L|ENG|1|0|0
+Rio Ferdinand|CB|189|89|1978|MUN|L|ENG|1|0|0
+Nemanja Vidić|CB|189|89|1981|MUN INT|L|SRB|1|0|0
+Peter Schmeichel|GK|191|91|1963|MUN|L|DEN|1|0|0
+Edwin van der Sar|GK|197|89|1970|AJA JUV MUN|L|NED|2|0|0
+Ryan Giggs|LW|179|89|1973|MUN|L|WAL|2|0|0
+Paul Scholes|CM|168|89|1974|MUN|L|ENG|2|0|0
+Roy Keane|CM|178|89|1971|MUN|L|IRL|1|0|0
+Eric Cantona|ST|187|90|1966|MUN|L|FRA|0|0|0
+Robin van Persie|ST|187|89|1983|ARS MUN|L|NED|0|0|0
+Mohamed Salah|RW|175|91|1992|CHE ROM LIV||EGY|1|0|0
+Virgil van Dijk|CB|193|90|1991|LIV||NED|1|0|0
+Alisson|GK|193|89|1992|ROM LIV||BRA|1|0|0
+Florian Wirtz|AM|177|88|2003|LEV LIV||GER|0|0|0
+Alexander Isak|ST|192|87|1999|NEW LIV||SWE|0|0|0
+Hugo Ekitiké|ST|190|84|2002|PSG LIV||FRA|0|0|0
+Dominik Szoboszlai|CM|186|84|2000|LIV||HUN|0|0|0
+Alexis Mac Allister|CM|174|86|1998|LIV||ARG|0|0|1
+Ryan Gravenberch|CM|190|85|2002|AJA BAY LIV||NED|0|0|0
+Ibrahima Konaté|CB|194|85|1999|LIV||FRA|0|0|0
+Cody Gakpo|LW|193|84|1999|LIV||NED|0|0|0
+Andy Robertson|LB|178|84|1994|LIV||SCO|1|0|0
+Darwin Núñez|ST|187|81|1999|LIV||URU|0|0|0
+Sadio Mané|LW|174|89|1992|LIV BAY||SEN|1|0|0
+Roberto Firmino|FW|181|86|1991|LIV||BRA|1|0|0
+Steven Gerrard|CM|183|91|1980|LIV|L|ENG|1|0|0
+Fernando Torres|ST|186|89|1984|ATM LIV CHE MIL|L|ESP|1|0|1
+Kenny Dalglish|ST|173|92|1951|LIV|L|SCO|3|0|0
+Jamie Carragher|CB|185|85|1978|LIV|L|ENG|1|0|0
+Bukayo Saka|RW|178|88|2001|ARS||ENG|0|0|0
+Martin Ødegaard|AM|178|87|1998|RMA ARS||NOR|0|0|0
+Declan Rice|CM|185|87|1999|ARS||ENG|0|0|0
+William Saliba|CB|192|87|2001|ARS||FRA|0|0|0
+Gabriel Magalhães|CB|190|86|1997|ARS||BRA|0|0|0
+David Raya|GK|183|86|1995|ARS||ESP|0|0|1
+Viktor Gyökeres|ST|187|86|1998|ARS||SWE|0|0|0
+Eberechi Eze|AM|173|84|1998|ARS||ENG|0|0|0
+Martín Zubimendi|CM|181|85|1999|ARS||ESP|0|0|1
+Kai Havertz|FW|193|83|1999|CHE ARS||GER|1|0|0
+Gabriel Martinelli|LW|178|82|2001|ARS||BRA|0|0|0
+Dennis Bergkamp|ST|188|92|1969|AJA INT ARS|L|NED|0|0|0
+Patrick Vieira|CM|193|90|1976|MIL ARS JUV INT MCI|L|FRA|0|0|1
+Tony Adams|CB|191|87|1966|ARS|L|ENG|0|0|0
+Petr Čech|GK|196|90|1982|CHE ARS|L|CZE|1|0|0
+Cesc Fàbregas|CM|180|88|1987|ARS BAR CHE|L|ESP|0|0|1
+Robert Pirès|LW|185|87|1973|ARS|L|FRA|0|0|1
+Cole Palmer|AM|189|87|2002|MCI CHE||ENG|0|0|0
+Enzo Fernández|CM|178|85|2001|CHE||ARG|0|0|1
+Moisés Caicedo|CM|178|86|2001|CHE||ECU|0|0|0
+Reece James|RB|182|83|1999|CHE||ENG|1|0|0
+João Pedro|ST|182|83|2001|CHE||BRA|0|0|0
+Robert Sánchez|GK|197|80|1997|CHE||ESP|0|0|0
+N'Golo Kanté|CM|168|89|1991|LEI CHE||FRA|1|0|1
+Frank Lampard|CM|184|91|1978|CHE MCI|L|ENG|1|0|0
+John Terry|CB|187|90|1980|CHE|L|ENG|1|0|0
+Didier Drogba|ST|189|91|1978|CHE|L|CIV|1|0|0
+Eden Hazard|LW|175|91|1991|CHE RMA|L|BEL|1|0|0
+Ashley Cole|LB|176|88|1980|ARS CHE ROM|L|ENG|1|0|0
+Claude Makélélé|CM|174|88|1973|RMA CHE PSG|L|FRA|1|0|0
+Harry Kane|ST|188|91|1993|TOT BAY||ENG|0|1|0
+Son Heung-min|LW|183|87|1992|TOT||KOR|0|0|0
+Micky van de Ven|CB|193|83|2001|TOT||NED|0|0|0
+Cristian Romero|CB|185|85|1998|TOT||ARG|0|0|1
+Guglielmo Vicario|GK|194|83|1996|TOT||ITA|0|0|0
+James Maddison|AM|175|82|1996|TOT||ENG|0|0|0
+Peter Crouch|ST|201|80|1981|TOT LIV|L|ENG|0|0|0
+Manuel Neuer|GK|193|90|1986|BAY||GER|2|0|1
+Thomas Müller|FW|185|88|1989|BAY||GER|2|0|1
+Jamal Musiala|AM|184|88|2003|BAY||GER|0|0|0
+Joshua Kimmich|CM|177|88|1995|BAY||GER|1|0|0
+Michael Olise|RW|184|87|2001|BAY||FRA|0|0|0
+Dayot Upamecano|CB|186|84|1998|BAY||FRA|0|0|0
+Alphonso Davies|LB|183|83|2000|BAY||CAN|1|0|0
+Luis Díaz|LW|180|86|1997|POR LIV BAY||COL|0|0|0
+Arjen Robben|RW|180|91|1984|CHE RMA BAY|L|NED|1|0|0
+Franck Ribéry|LW|170|90|1983|BAY|L|FRA|1|0|0
+Philipp Lahm|RB|170|90|1983|BAY|L|GER|1|0|1
+Oliver Kahn|GK|188|91|1969|BAY|L|GER|1|0|0
+Bastian Schweinsteiger|CM|183|89|1984|BAY MUN|L|GER|1|0|1
+Ousmane Dembélé|RW|178|90|1997|DOR BAR PSG||FRA|2|1|1
+Vitinha|CM|172|88|2000|PSG||POR|2|0|0
+João Neves|CM|174|86|2004|PSG||POR|2|0|0
+Achraf Hakimi|RB|181|88|1998|RMA DOR INT PSG||MAR|2|0|0
+Marquinhos|CB|183|87|1994|ROM PSG||BRA|2|0|0
+Nuno Mendes|LB|180|87|2002|PSG||POR|2|0|0
+Khvicha Kvaratskhelia|LW|183|87|2001|NAP PSG||GEO|2|0|0
+Désiré Doué|RW|181|85|2005|REN PSG||FRA|2|0|0
+Marco Reus|AM|180|87|1989|DOR||GER|0|0|0
+Gianluigi Buffon|GK|192|92|1978|JUV PSG|L|ITA|0|0|1
+Alessandro Del Piero|FW|174|91|1974|JUV|L|ITA|1|0|1
+Andrea Pirlo|CM|177|91|1979|INT MIL JUV|L|ITA|2|0|1
+Giorgio Chiellini|CB|187|88|1984|JUV|L|ITA|0|0|0
+Paolo Maldini|CB|186|93|1968|MIL|L|ITA|5|0|0
+Andriy Shevchenko|ST|183|91|1976|MIL CHE|L|UKR|1|1|0
+Kenan Yıldız|FW|185|83|2005|JUV||TUR|0|0|0
+Dušan Vlahović|ST|190|82|2000|JUV||SRB|0|0|0
+Lautaro Martínez|ST|174|88|1997|INT||ARG|0|0|1
+Marcus Thuram|ST|192|85|1997|INT||FRA|0|0|0
+Nicolò Barella|CM|172|86|1997|INT||ITA|0|0|0
+Rafael Leão|LW|188|85|1999|MIL||POR|0|0|0
+Victor Osimhen|ST|186|86|1998|NAP GAL||NGA|0|0|0
+Scott McTominay|CM|191|85|1996|MUN NAP||SCO|0|0|0
+Antoine Griezmann|FW|176|87|1991|ATM BAR||FRA|0|0|1
+Jan Oblak|GK|188|87|1993|ATM||SVN|0|0|0
+Julián Álvarez|ST|170|87|2000|MCI ATM||ARG|1|0|1
+Koke|CM|176|83|1992|ATM||ESP|0|0|0
+Pelé|FW|173|98|1940|SAN|L|BRA|0|0|3`;
+const DB=RAW.trim().split('\n').map(l=>{const[n,pos,h,r,y,c,L,nat,ucl,bdo,wc]=l.split('|');return{n,pos,h:+h,r:+r,y:+y,c:c.split(' '),L:L==='L',nat,ucl:+ucl,bdo:+bdo,wc:+wc}});
 const SLOTS=['ST','CM','CM','CB','GK'];
 const grp=p=>({GK:'GK',CB:'CB',LB:'CB',RB:'CB',CM:'CM',AM:'CM',RM:'CM'})[p]||'ST';
+const NAT={ENG:'England',ESP:'Spain',FRA:'France',BRA:'Brazil',ARG:'Argentina',GER:'Germany',POR:'Portugal',NED:'Netherlands',ITA:'Italy',BEL:'Belgium',URU:'Uruguay',CRO:'Croatia',SCO:'Scotland',NOR:'Norway',EGY:'Egypt',SWE:'Sweden',CMR:'Cameroon',MAR:'Morocco',WAL:'Wales',UKR:'Ukraine',TUR:'Turkey',CIV:'Ivory Coast',SRB:'Serbia',SVN:'Slovenia',HUN:'Hungary',POL:'Poland',CRC:'Costa Rica',SEN:'Senegal',NGA:'Nigeria',KOR:'South Korea',CAN:'Canada',COL:'Colombia',GEO:'Georgia',ECU:'Ecuador',DEN:'Denmark',IRL:'Ireland',CZE:'Czechia'};
+const pl=(v,w)=>`${v} ${w}${v===1?'':'s'}`;
 const CATS={
- tall:{t:'TALLEST',sub:'Highest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',hi:1,ask:'Height (cm)'},
- short:{t:'SHORTEST',sub:'Lowest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',hi:0,ask:'Height (cm)'},
- old:{t:'OLDEST',sub:'Highest total age wins',k:'y',v:p=>YEAR-p.y,f:v=>v+' yrs',hi:1,ask:'Birth year'},
- rated:{t:'BEST RATED',sub:'Highest total rating wins',k:'r',v:p=>p.r,f:v=>String(v),hi:1,ask:'Rating out of 99'}};
-$('cat').innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">5 ${c.t.toLowerCase()} players</option>`).join('');
-$('club').innerHTML=Object.entries(CLUB).map(([k,c])=>`<option value="${k}">${c[0]}</option>`).join('')+'<option value="ANY">Any club</option>';
+ tall:{t:'BUILD THE 5 TALLEST',sub:'Highest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',sp:v=>v+' centimetres',hi:1,ask:'Height (cm)'},
+ short:{t:'BUILD THE 5 SHORTEST',sub:'Lowest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',sp:v=>v+' centimetres',hi:0,ask:'Height (cm)'},
+ ucl:{t:'MOST CHAMPIONS LEAGUES',sub:'Most Champions League titles wins',k:'ucl',v:p=>p.ucl,f:v=>pl(v,'UCL'),sp:v=>pl(v,'Champions League'),hi:1,ask:'Champions League titles'},
+ bdo:{t:"MOST BALLON D'ORS",sub:"Most Ballon d'Ors wins",k:'bdo',v:p=>p.bdo,f:v=>pl(v,"Ballon d'Or"),sp:v=>pl(v,"Ballon d'Or"),hi:1,ask:"Ballon d'Ors won"},
+ wc:{t:'MOST WORLD CUPS',sub:'Most World Cup wins',k:'wc',v:p=>p.wc,f:v=>pl(v,'World Cup'),sp:v=>pl(v,'World Cup'),hi:1,ask:'World Cups won'},
+ rated:{t:'BEST RATED 5',sub:'Highest total rating wins',k:'r',v:p=>p.r,f:v=>String(v),sp:v=>'rated '+v,hi:1,ask:'Rating out of 99'},
+ old:{t:'BUILD THE 5 OLDEST',sub:'Highest total age wins',k:'y',v:p=>YEAR-p.y,f:v=>v+' yrs',sp:v=>v+' years old',hi:1,ask:'Birth year'},
+ young:{t:'BUILD THE 5 YOUNGEST',sub:'Lowest total age wins',k:'y',v:p=>YEAR-p.y,f:v=>v+' yrs',sp:v=>v+' years old',hi:0,ask:'Birth year'}};
+$('cat').innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.t[0]+c.t.slice(1).toLowerCase()}</option>`).join('');
+const natsIn=Object.keys(NAT).filter(k=>DB.filter(p=>p.nat===k).length>=5);
+$('club').innerHTML='<optgroup label="Clubs">'+Object.entries(CLUB).map(([k,c])=>`<option value="c:${k}">${c[0]}</option>`).join('')+'</optgroup><optgroup label="Countries">'+natsIn.map(k=>`<option value="n:${k}">${NAT[k]}</option>`).join('')+'</optgroup><option value="ANY">Any player</option>';
+function flt(){const v=$('club').value;if(v==='ANY')return{name:'Any',ok:()=>true,known:()=>true};const[t,k]=v.split(':');
+ return t==='c'?{name:CLUB[k][0],ok:p=>p.c.includes(k),known:p=>p.c.length>0}:{name:NAT[k],ok:p=>p.nat===k,known:p=>!!p.nat}}
 
 const HOWB=`<p>Tap <b>Start voice game</b> and allow the microphone. The game reads out each player and says who bids first. Then say your bids out loud, like "2 dollars", "3 dollars".</p><p>After the last bid it counts down, then says "sold" and moves the player's card into the winner's team, in the best empty spot. Then the next player comes up. You must keep at least $1 for every other empty spot.</p><p>You can still set the bid and tap <b>Sold to</b> yourself, and the winner picks the spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
-const HOWQ=`<p>Pick a challenge and a team, for example the 5 tallest Real Madrid players. Both shout a name at the same time. The host types it and taps whoever said it first.</p><p>If you both said the same player, the slower one has to name someone else. Once both have 5, the totals are added up and the winner appears on screen.</p>`;
+const HOWQ=`<p>Pick a challenge and a team or country, or tap <b>Random challenge</b>. Then tap <b>Start voice game</b>. The game reads the challenge and says who goes first.</p><p>Take turns saying one player's name. The game recognises him, checks he fits the team, says his number (for example "Cristiano Ronaldo, 5 Champions Leagues") and adds it to your score. A player can only be picked once. After 5 each, the totals decide the winner.</p>`;
 
 let mode='bid',S;const photos={};
 function getPh(n){if(n in photos)return photos[n];photos[n]=null;try{const d=localStorage.getItem('fd-ph-'+norm(n));if(d){const im=new Image();im.onload=()=>{photos[n]=im};im.src=d}}catch(e){}return null}
@@ -354,7 +367,7 @@ function fresh(){const b=Math.max(5,Math.min(500,Math.round(+$('budget').value)|
  clearTimeout(autoT);endAt=0;anim=null;try{speechSynthesis.cancel()}catch(e){}
  S={lead:null,money:[b,b],teams:[0,1].map(()=>SLOTS.map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
  $('amt').value=1;$('qvRow').classList.add('hide');ui();say('')}
-const KEYS=['money','teams','quiz','cur','shown','done','last'];
+const KEYS=['money','teams','quiz','cur','shown','done','last','turn'];
 function snap(){S.hist.push(JSON.stringify(KEYS.reduce((o,k)=>(o[k]=S[k],o),{})))}
 function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');clearTimeout(autoT);endAt=0;anim=null;Object.assign(S,JSON.parse(h));S.pending=null;S.lead=null;S.warn=null;ui();say('Undone')}
 
@@ -381,23 +394,47 @@ function reveal(){const A=$('sb0').value,B=$('sb1').value;if(A===''||B==='')retu
  if(!S.pending)return;$('slotQ').textContent=`${N(0)} $${a} vs ${N(1)} $${b}. `+$('slotQ').textContent}
 function skip(){if(!S.cur)return;clearTimeout(autoT);endAt=0;S.lead=null;snap();S.cur=null;S.pending=null;ui();say('No sale. Tap Next player.')}
 
-function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say('Type the name that was said first');const C=CATS[$('cat').value],club=$('club').value;
- if(S.quiz[i].length>=5)return say(N(i)+' already has 5 players');
+function addPick(i,p,force){const C=CATS[$('cat').value],F=flt();
+ if(S.done)return false;if(S.quiz[i].length>=5)i=1-i;if(S.quiz[i].length>=5)return false;
+ const o=owner(p.n);if(o>=0){say(`${p.n} already belongs to ${N(o)}. Say someone else.`);speak(`${p.n} is already taken. ${N(i)}, say someone else.`);return false}
+ if(!force&&F.known(p)&&!F.ok(p)){S.warn={i,p};$('qAllow').classList.remove('hide');say(`Our list doesn't have ${p.n} as a ${F.name} player. Say someone else, or tap Allow him anyway.`);speak(`${p.n} doesn't count for ${F.name}. ${N(i)}, try again.`);return false}
+ snap();S.quiz[i].push(p);S.last={i,p};S.warn=null;$('qAllow').classList.add('hide');anim={p,i,k:S.quiz[i].length-1,t0:performance.now()};
+ if(S.quiz.every(t=>t.length>=5))S.done=true;else S.turn=S.quiz[1-i].length<5?1-i:i;
+ ui();say(S.done?'Both teams are done. The result is on screen.':`${p.n} goes to ${N(i)}: ${C.f(C.v(p))}. ${N(S.turn)}'s turn.`);
+ speak(`${p.n}, ${C.sp(C.v(p))}.`+(S.done?'':` ${N(S.turn)}, your turn.`),()=>{if(S.done){const r=result(),[a,b]=r.s;speak(a===b?"Full time. It's a draw!":`Full time. ${N((r.hi?a>b:a<b)?0:1)} wins!`)}});return true}
+function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say('Type a player name first');const C=CATS[$('cat').value];
  const c=cands(v);if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));
  let p=c[0];
  if(!p){const q=$('qv').value;if(q===''){$('qvRow').classList.remove('hide');$('qvl').textContent=C.ask;$('qv').focus();return say(`${title(v)} isn't on our list. Enter his ${C.ask.toLowerCase()}, then tap again.`)}
-  p={n:title(v),pos:'?',h:0,r:0,y:YEAR,c:[]};p[C.k]=+q}
- const o=owner(p.n);if(o>=0)return say(`${p.n} already belongs to ${N(o)}. Name someone else.`);
- if(club!=='ANY'&&p.c.length&&!p.c.includes(club)&&S.warn!==p.n){S.warn=p.n;return say(`Our list doesn't show ${p.n} at ${CLUB[club][0]}. Tap again to allow him anyway.`)}
- snap();S.quiz[i].push(p);S.last={i,p};anim={p,i,k:S.quiz[i].length-1,t0:performance.now()};speak(`${p.n}, to ${N(i)}.`);S.warn=null;$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide');
- if(S.quiz.every(t=>t.length>=5))S.done=true;ui();say(S.done?'Both teams are done. The result is on screen.':`${p.n} goes to ${N(i)} (${C.f(C.v(p))})`)}
+  p={n:title(v),pos:'?',h:0,r:0,y:YEAR,c:[],nat:'',ucl:0,bdo:0,wc:0};p[C.k]=+q}
+ if(addPick(i,p)){$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide')}}
+/* voice name matching */
+const ALIAS={cr7:'Cristiano Ronaldo',vini:'Vinícius Júnior',vinny:'Vinícius Júnior',holland:'Erling Haaland',halland:'Erling Haaland',mbappe:'Kylian Mbappé',r9:'Ronaldo Nazário','ronaldo nazario':'Ronaldo Nazário','el fenomeno':'Ronaldo Nazário',zizou:'Zinedine Zidane',kdb:'Kevin De Bruyne',trent:'Trent Alexander-Arnold',taa:'Trent Alexander-Arnold',vvd:'Virgil van Dijk',kvara:'Khvicha Kvaratskhelia',dembele:'Ousmane Dembélé',lewa:'Robert Lewandowski',ibra:'Zlatan Ibrahimović',zlatan:'Zlatan Ibrahimović',bruno:'Bruno Fernandes',yamal:'Lamine Yamal',lamine:'Lamine Yamal',rudiger:'Antonio Rüdiger',odegaard:'Martin Ødegaard',ozil:null};
+const KEY=(()=>{const m={};const add=(k,p)=>{if(!k||k.length<3)return;(m[k]=m[k]||[]).includes(p)||m[k].push(p)};
+ for(const p of DB){const t=norm(p.n).split(' ');add(t.join(' '),p);add(t[t.length-1],p);if(t.length>1){add(t[0],p);if(t.length>2)add(t.slice(-2).join(' '),p)}}
+ for(const[k,v]of Object.entries(ALIAS)){const p=v&&DB.find(x=>x.n===v);if(p)m[k]=[p]}return m})();
+function findSpoken(w){const F=flt();let best=null;
+ for(let len=3;len>=1;len--)for(let j=0;j+len<=w.length;j++){const k=w.slice(j,j+len).join(' '),c=KEY[k];if(!c)continue;
+  let pick=c.length===1?c[0]:(c.filter(F.ok).length===1?c.filter(F.ok)[0]:c.filter(p=>owner(p.n)<0&&F.ok(p))[0]||null);
+  if(len===1&&c.length>1&&!pick)continue;if(pick&&(!best||len>best.len))best={p:pick,len}}
+ return best&&best.p}
+function runQuiz(idx,alts){const ws=alts.map(t=>norm(t).split(' ').filter(Boolean)),from=Math.min(used[idx]||0,ws[0].length);used[idx]=ws[0].length;
+ if(speaking||Date.now()<muteUntil||mode!=='quiz'||S.done||S.turn===undefined)return;
+ let p=null;for(const w of ws){p=findSpoken(w.slice(Math.min(from,w.length)));if(p)break}
+ if(!p){const heard=ws[0].slice(from).join(' ');if(heard.split(' ').length>=1&&heard.length>2)say(`Heard "${heard}" but couldn't match a player. Try the full name.`);return}
+ addPick(S.turn,p)}
+function quizStart(){if(mode!=='quiz')return;if(S.done)fresh();const C=CATS[$('cat').value],F=flt();S.turn=S.turn??(Math.random()<.5?0:1);ui();listen();
+ speak(`${C.t.toLowerCase()}${F.name==='Any'?'':', '+F.name+' players'}. ${N(S.turn)} goes first.`);say(`${N(S.turn)} goes first. Say a player's name.`)}
+function randomChallenge(){const ck=Object.keys(CATS),fo=[...$('club').options].map(o=>o.value).filter(v=>v!=='ANY');
+ let c,f,tries=0;do{c=ck[Math.random()*ck.length|0];f=fo[Math.random()*fo.length|0];tries++}while(tries<30&&(c==='bdo'||c==='wc')&&f.startsWith('c:')&&!['c:RMA','c:BAR','c:MIL','c:JUV','c:INT'].includes(f));
+ $('cat').value=c;$('club').value=f;fresh();quizStart()}
 
 /* ---------- voice host ---------- */
 let speaking=false,muteUntil=0,listening=false,recog=null,endAt=0,noBidAt=0,autoT=0,anim=null,deb=0;const used={},ANCH=[[],[]];
 const POSN=p=>p==='?'?'':({GK:'goalkeeper',CB:'defender',LB:'defender',RB:'defender',CM:'midfielder',AM:'midfielder',RM:'midfielder'})[p]||'forward';
 const auto=()=>$('auto').checked;
 const open1=()=>{const f=[0,1].filter(i=>S.teams[i].some(s=>!s.p));return f.length===1?f[0]:(S.shown.length%2?0:1)};
-function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+700;if(cb)cb()};
+function speak(t,cb){let done=false;const fin=()=>{if(done)return;done=true;speaking=false;muteUntil=Date.now()+1100;if(cb)cb()};
  const ss=window.speechSynthesis;if(!ss||!t){setTimeout(fin,300);return}
  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;u.onend=fin;u.onerror=fin;speaking=true;ss.cancel();ss.speak(u)}catch(e){fin();return}
  setTimeout(fin,1800+t.length*90)}
@@ -437,7 +474,7 @@ function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognit
  if(!SR){$('micNote').textContent='This browser can\'t listen for bids. Tap your half of the stage to raise the bid by $1, or use the buttons below.';return}
  if(listening)return;listening=true;recog=new SR();recog.lang=navigator.language||'en-US';recog.continuous=true;recog.interimResults=true;recog.maxAlternatives=4;
  recog.onstart=()=>{for(const k in used)delete used[k]};
- recog.onresult=e=>{if(endAt&&!speaking)endAt=Math.max(endAt,Date.now()+2500);const idx=e.results.length-1,r=e.results[idx],alts=[...r].map(a=>a.transcript);clearTimeout(deb);if(r.isFinal)run(idx,alts);else deb=setTimeout(()=>run(idx,alts),600)};
+ recog.onresult=e=>{if(endAt&&!speaking)endAt=Math.max(endAt,Date.now()+2500);const idx=e.results.length-1,r=e.results[idx],alts=[...r].map(a=>a.transcript),go=mode==='quiz'?runQuiz:run;clearTimeout(deb);if(r.isFinal)go(idx,alts);else deb=setTimeout(()=>go(idx,alts),mode==='quiz'?900:600)};
  recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){listening=false;$('micNote').textContent='The microphone is blocked, so voice bids are off. Tap your half of the stage to raise the bid by $1.'}};
  recog.onend=()=>{if(listening)setTimeout(()=>{try{recog.start()}catch(e){}},250)};
  try{recog.start();$('micNote').textContent=`Listening. Just say the number: "2", "3 dollars"… Each new bid goes to the other player. Raising your own bid? Add your name ("${N(1)} 5"). Or tap your half of the stage to raise by $1.`}catch(e){listening=false}}
@@ -448,13 +485,13 @@ function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p
 function ui(){const q=mode==='quiz';
  $('tBid').setAttribute('aria-pressed',!q);$('tQuiz').setAttribute('aria-pressed',q);
  $('setBid').classList.toggle('hide',q);$('setQuiz').classList.toggle('hide',!q);$('pBid').classList.toggle('hide',q);$('pQuiz').classList.toggle('hide',!q);
- for(const i of[0,1]){$('sell'+i).textContent='Sold to '+N(i);$('q'+i).textContent=N(i)+' said it first';$('sbl'+i).textContent=N(i)+"'s bid";
+ for(const i of[0,1]){$('sell'+i).textContent='Sold to '+N(i);$('q'+i).textContent='Give to '+N(i);$('sbl'+i).textContent=N(i)+"'s bid";
   $('sell'+i).disabled=S.done||!S.cur||S.teams[i].every(s=>s.p);$('q'+i).disabled=S.done||S.quiz[i].length>=5}
  $('nextBtn').disabled=S.done;$('skipBtn').disabled=!S.cur;
  $('slotBox').classList.toggle('hide',!S.pending);
  if(S.pending){const{i,price}=S.pending;$('slotQ').textContent=`${N(i)} buys ${S.cur.n} for $${price}. Which spot?`;
   $('slots').innerHTML=S.teams[i].map((s,k)=>s.p?'':`<button data-k="${k}" class="${s.pos===grp(S.cur.pos)?'hint':''}">${s.pos}</button>`).join('')+'<button data-k="x">Cancel</button>'}
- const club=$('club').value,list=q&&club!=='ANY'?DB.filter(p=>p.c.includes(club)):DB;
+ const F=flt(),list=q?DB.filter(F.ok):DB;
  $('names').innerHTML=list.map(p=>`<option value="${p.n}"></option>`).join('');
  $('how').innerHTML=q?HOWQ:HOWB;phUi()}
 
@@ -511,15 +548,15 @@ function auctionInfo(){if(!S.cur||S.done)return;const now=Date.now();
    txt(can?`${N(o)}, go higher? ${s}`:(s<=1?'Going… going…':`Going in ${s}`),540,1000,66,'#fff','center',900)}}
  else if(!speaking)txt(`${N(open1())} to bid first`,540,930,72,'#fff','center',900)}
 function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
- ctx.fillStyle='rgba(0,0,0,.78)';rr(90,760,900,440,30);ctx.fill();txt(t,540,900,120,'#f5e663','center',840);
- txt(`${N(0)}: ${r.f(a)}`,540,1005,64,'#fff','center',820);txt(`${N(1)}: ${r.f(b)}`,540,1090,64,'#fff','center',820);txt(r.sub,540,1160,40,'#9fe8ad','center',820)}
+ ctx.fillStyle='rgba(0,0,0,.8)';rr(90,830,900,400,30);ctx.fill();txt(t,540,960,116,'#f5e663','center',840);
+ txt(`${N(0)}: ${r.f(a)}`,540,1050,60,'#fff','center',820);txt(`${N(1)}: ${r.f(b)}`,540,1125,60,'#fff','center',820);txt(r.sub,540,1190,38,'#9fe8ad','center',820)}
 function draw(){try{tick();bg();const q=mode==='quiz',C=CATS[$('cat').value];
- if(q){const club=$('club').value,L=S.last&&S.last.p;txt(`BUILD THE 5 ${C.t}`,540,150,92,'#f5e663','center',1040);
-  txt(`(${club==='ANY'?'Any club':CLUB[club][0]} players, first to say it!)`,540,235,52,'#fff','center',1000);
-  card(L,L?C.f(C.v(L)):'',S.done?'Full time':L?L.n:'Say a name!')}
+ if(q){const F=flt(),L=S.last&&S.last.p;txt(C.t,540,150,92,'#f5e663','center',1040);
+  txt(F.name==='Any'?'(Any player in the world!)':`(${F.name} players only!)`,540,235,56,'#fff','center',1000);
+  card(L,L?C.f(C.v(L)):'',S.done?'Full time':'Say a name!');if(!S.done&&S.turn!==undefined&&!speaking)txt(`${N(S.turn)}'s turn`,540,930,80,'#43e35a','center',900)}
  else{txt('MUTED FOOTBALLER DRAFT',540,150,92,'#f5e663','center',1040);txt('(Highest Bid Takes It!)',540,235,60,'#fff','center');
   const a=Math.round(+$('amt').value)||0;card(S.cur,S.cur&&!S.lead&&a>1?'$'+a:'',S.done?'Full time':S.cur?S.cur.n:'Next player…');auctionInfo()}
- const R=q?result():null,val=i=>q?C.f(R.s[i]):'$'+S.money[i],y=1330;
+ const R=q?result():null,val=i=>q?(['ucl','bdo','wc','rated'].includes($('cat').value)?String(R.s[i]):C.f(R.s[i])):'$'+S.money[i],y=1330;
  const w0=txt(N(0),20,y,100,'#fff','left',300);ctx.fillStyle='#fff';ctx.fillRect(20,y+18,w0,8);txt(val(0),20+w0+22,y,100,'#43e35a','left',498-w0);
  const wv=txt(val(1),1060,y,100,'#43e35a','right',220),w1=txt(N(1),1060-wv-22,y,100,'#fff','right',280);ctx.fillStyle='#fff';ctx.fillRect(1060-wv-22-w1,y+18,w1,8);
  team(0,q,C);team(1,q,C);flyer();if(S.done&&!anim)winner()}catch(e){}
@@ -557,7 +594,9 @@ $('tBid').onclick=()=>{mode='bid';fresh()};$('tQuiz').onclick=()=>{mode='quiz';f
 ['budget','pool','cat','club'].forEach(id=>$(id).addEventListener('change',fresh));
 ['n0','n1'].forEach(id=>{try{const v=localStorage.getItem('fd-'+id);if(v)$(id).value=v}catch(e){}
  $(id).addEventListener('input',()=>{try{localStorage.setItem('fd-'+id,$(id).value)}catch(e){}ui()})});
-$('nextBtn').onclick=nextPlayer;
+$('nextBtn').onclick=nextPlayer;$('qVoiceBtn').onclick=quizStart;$('randBtn').onclick=randomChallenge;
+$('qPass').onclick=()=>{if(S.turn===undefined||S.done)return;const o=1-S.turn;if(S.quiz[o].length<5)S.turn=o;say(`${N(S.turn)}'s turn.`);speak(`${N(S.turn)}, your turn.`)};
+$('qAllow').onclick=()=>{if(S.warn&&S.warn.p)addPick(S.warn.i,S.warn.p,true)};
 $('voiceBtn').onclick=()=>{if(mode!=='bid'){mode='bid';fresh()}if(S.done)fresh();listen();if(!S.cur)nextPlayer();else announce()};
 cv.addEventListener('pointerdown',e=>{if(mode!=='bid'||!S.cur)return;const r=cv.getBoundingClientRect();bid(e.clientX-r.left<r.width/2?0:1,(S.lead?S.lead.amt:0)+1,'tap')});$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
 $('sell0').onclick=()=>sell(0);$('sell1').onclick=()=>sell(1);$('q0').onclick=()=>pick(0);$('q1').onclick=()=>pick(1);
