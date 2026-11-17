@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Footballer Draft Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: loud, playful, made for short football videos
+   IDEA: the vertical reel frame itself, with a host's control desk beside it
+   PICTURE: a live 9:16 stage — camera, player card, two team sheets, the result
+   COLOUR and TYPE: floodlit night-pitch green-black, title yellow, money green; Anton + Barlow Semi Condensed
+   LAYOUT: stage left, desk right; stage then desk stacked under 860px */
+:root{color-scheme:dark;--bg:#0b130e;--panel:#14211a;--line:#2a3f31;--ink:#eef3ea;--mute:#a3b8a8;--yel:#f5e663;--grn:#43e35a;--red:#ff4d5e}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:radial-gradient(120% 60% at 50% 0,#1b3324,var(--bg));color:var(--ink);font:16px/1.45 "Barlow Semi Condensed",system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:18px max(3vw,12px) 40px;display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:22px;align-items:start}
+h1{font:400 clamp(30px,4vw,44px)/1.05 Anton,Impact,sans-serif;margin:0;color:var(--yel);grid-column:1/-1}
+.lead{grid-column:1/-1;margin:-12px 0 0;color:var(--mute)}
+.stage{position:sticky;top:12px;width:min(440px,calc(82vh*9/16))}
+canvas{display:block;width:100%;aspect-ratio:9/16;border-radius:18px;background:#000;box-shadow:0 20px 60px #000a}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.desk{display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{font:400 22px/1.1 Anton,sans-serif;margin:0 0 12px}
+label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
+input,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#0c1610;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--yel);outline-offset:2px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:10px}
+button{font:700 16px "Barlow Semi Condensed",sans-serif;min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:#1f3127;color:var(--ink);cursor:pointer}
+button:hover{background:#28402f}
+button:disabled{opacity:.4;cursor:not-allowed}
+.go{background:var(--yel);color:#141a00;border-color:var(--yel)}.go:hover{background:#fff27a}
+.buy{background:var(--grn);color:#062b0c;border-color:var(--grn)}.buy:hover{background:#6af07c}
+.rec{background:var(--red);border-color:var(--red);color:#fff}.rec:hover{background:#ff6b79}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0c1610;padding:5px;border-radius:12px;margin-bottom:12px}
+.tabs button{border:0;background:transparent}.tabs button[aria-pressed=true]{background:var(--yel);color:#141a00}
+.amt{display:grid;grid-template-columns:52px 1fr 52px;gap:6px}
+.amt input{text-align:center;font:400 26px Anton,sans-serif}
+.msg{min-height:22px;color:var(--yel);margin:8px 0 0}
+.slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.slots button{min-width:64px}.slots button.hint{border-color:var(--grn);color:var(--grn)}
+details summary{cursor:pointer;color:var(--mute);margin-top:12px;min-height:32px}
+.hide{display:none!important}
+.note{font-size:14px;color:var(--mute);margin:6px 0 0}
+#how p{margin:0 0 8px}
+video#prev{width:100%;max-width:280px;border-radius:12px;margin-top:10px;display:block}
+a.dl{color:var(--yel);display:inline-block;margin-top:8px}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}.stage{position:static;width:min(100%,440px);justify-self:center}}
+</style></head>
+<body><div class="wrap">
+<h1>Footballer Draft</h1>
+<p class="lead">Two players and a host. Bid for footballers or race to name them. The stage is what gets filmed.</p>
+
+<div class="stage">
+ <canvas id="cv" width="1080" height="1920" aria-label="Game stage"></canvas>
+ <div class="bar">
+  <button id="camBtn">Start camera</button>
+  <button id="recBtn" class="rec">Record</button>
+  <button id="undoBtn">Undo</button>
+  <button id="newBtn">New game</button>
+ </div>
+ <p class="msg" id="camMsg"></p>
+ <div id="out" class="hide"><video id="prev" controls playsinline></video><a id="dl" class="dl" download>Save the video</a></div>
+</div>
+
+<div class="desk">
+ <section class="card"><h2>Game setup</h2>
+  <div class="tabs"><button id="tBid" aria-pressed="true">Bid draft</button><button id="tQuiz" aria-pressed="false">Name race</button></div>
+  <div class="row"><div><label for="n0">Player 1</label><input id="n0" value="Conor" maxlength="12"></div><div><label for="n1">Player 2</label><input id="n1" value="Tom" maxlength="12"></div></div>
+  <div id="setBid" class="row"><div><label for="budget">Budget each ($)</label><input id="budget" type="number" min="5" max="500" value="20" inputmode="numeric"></div>
+   <div><label for="pool">Players to auction</label><select id="pool"><option value="now">Current stars</option><option value="old">Legends</option><option value="all">Everyone</option></select></div></div>
+  <div id="setQuiz" class="row hide"><div><label for="cat">Challenge</label><select id="cat"></select></div><div><label for="club">Team</label><select id="club"></select></div></div>
+  <p class="note">Changing the mode, budget, pool, challenge or team starts a new game.</p>
+ </section>
+
+ <section class="card" id="pBid"><h2>Auction desk</h2>
+  <button class="go" id="nextBtn">Next player</button>
+  <div class="row" style="margin-top:12px"><div><label for="custom">Or auction a player you choose</label><input id="custom" list="names" placeholder="Type a name" autocomplete="off"></div><div style="align-self:end"><button id="customBtn" style="width:100%">Put up for auction</button></div></div>
+  <label for="amt">Winning bid ($)</label>
+  <div class="amt"><button id="minus" aria-label="Lower bid">−</button><input id="amt" type="number" min="1" value="1" inputmode="numeric"><button id="plus" aria-label="Raise bid">+</button></div>
+  <div class="row" style="margin-top:10px"><button class="buy" id="sell0">Sold to Conor</button><button class="buy" id="sell1">Sold to Tom</button></div>
+  <button id="skipBtn">No sale, skip him</button>
+  <div id="slotBox" class="hide"><p class="msg" id="slotQ"></p><div class="slots" id="slots"></div></div>
+  <details><summary>Secret bids: each types a bid without the other looking</summary>
+   <div class="row" style="margin-top:8px"><div><label for="sb0" id="sbl0">Conor's bid</label><input id="sb0" type="password" inputmode="numeric"></div><div><label for="sb1" id="sbl1">Tom's bid</label><input id="sb1" type="password" inputmode="numeric"></div></div>
+   <button class="go" id="reveal">Reveal bids</button></details>
+  <label for="photo" style="margin-top:14px">Photo for the player on the card (optional)</label><input id="photo" type="file" accept="image/*">
+  <p class="msg" id="msgB" role="status"></p>
+ </section>
+
+ <section class="card hide" id="pQuiz"><h2>Name race desk</h2>
+  <label for="qn">Name that was said</label><input id="qn" list="names" placeholder="e.g. Courtois" autocomplete="off">
+  <div id="qvRow" class="hide" style="margin-top:10px"><label for="qv" id="qvl">Height (cm)</label><input id="qv" type="number" inputmode="numeric"></div>
+  <div class="row" style="margin-top:10px"><button class="buy" id="q0">Conor said it first</button><button class="buy" id="q1">Tom said it first</button></div>
+  <label for="photo2">Photo for the last pick (optional)</label><input id="photo2" type="file" accept="image/*">
+  <p class="msg" id="msgQ" role="status"></p>
+ </section>
+
+ <section class="card"><h2>How to play</h2><div id="how"></div>
+  <p class="note">Heights, ages and ratings come from a built-in list of about 190 players and are approximate. Anyone not on the list can still be added.</p></section>
+</div>
+<datalist id="names"></datalist>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d'),W=1080,H=1920,YEAR=new Date().getFullYear();
+const FONT='Anton, Impact, sans-serif';
+const CLUB={RMA:['Real Madrid','#c9a43a'],BAR:['Barcelona','#a50044'],MCI:['Man City','#5fa8dc'],MUN:['Man United','#da291c'],LIV:['Liverpool','#c8102e'],ARS:['Arsenal','#e30613'],CHE:['Chelsea','#034694'],TOT:['Tottenham','#1b2a6b'],BAY:['Bayern Munich','#dc052d'],DOR:['Dortmund','#d4b800'],PSG:['PSG','#0b3d73'],JUV:['Juventus','#333333'],INT:['Inter','#0068a8'],MIL:['AC Milan','#d6111b'],ATM:['Atlético Madrid','#cb3524'],NAP:['Napoli','#12a0d7'],AJA:['Ajax','#d2122e']};
+// name|position|height cm|rating|birth year|clubs|L = retired
+const RAW=`Cristiano Ronaldo|ST|187|93|1985|SPO MUN RMA JUV ALN
+Kylian Mbappé|ST|178|91|1998|MON PSG RMA
+Vinícius Júnior|LW|176|90|2000|RMA
+Jude Bellingham|CM|186|89|2003|BIR DOR RMA
+Federico Valverde|CM|182|88|1998|RMA
+Aurélien Tchouaméni|CM|187|85|2000|MON RMA
+Eduardo Camavinga|CM|182|84|2002|REN RMA
+Thibaut Courtois|GK|200|89|1992|ATM CHE RMA
+Antonio Rüdiger|CB|190|86|1993|ROM CHE RMA
+Éder Militão|CB|186|85|1998|POR RMA
+Dean Huijsen|CB|197|82|2005|JUV BOU RMA
+Trent Alexander-Arnold|RB|180|86|1998|LIV RMA
+Rodrygo|RW|174|84|2001|SAN RMA
+Arda Güler|AM|176|83|2005|RMA
+Dani Carvajal|RB|173|85|1992|RMA
+Ferland Mendy|LB|180|81|1995|LYO RMA
+Brahim Díaz|AM|170|81|1999|MCI MIL RMA
+Andriy Lunin|GK|191|80|1999|RMA
+Luka Modrić|CM|172|91|1985|TOT RMA MIL
+Karim Benzema|ST|185|91|1987|LYO RMA ITT
+Sergio Ramos|CB|184|90|1986|SEV RMA PSG
+Casemiro|CM|185|88|1992|RMA MUN
+Keylor Navas|GK|185|87|1986|RMA PSG
+Toni Kroos|CM|183|90|1990|BAY RMA|L
+Raphaël Varane|CB|191|87|1993|RMA MUN|L
+Marcelo|LB|174|88|1988|RMA|L
+Gareth Bale|RW|185|89|1989|TOT RMA|L
+Zinedine Zidane|AM|185|95|1972|JUV RMA|L
+Ronaldo Nazário|ST|183|96|1976|BAR INT RMA MIL|L
+Iker Casillas|GK|185|91|1981|RMA POR|L
+Raúl|ST|180|90|1977|RMA|L
+Roberto Carlos|LB|168|90|1973|INT RMA|L
+David Beckham|RM|180|89|1975|MUN RMA MIL PSG|L
+Luís Figo|RW|180|91|1972|BAR RMA INT|L
+Fabio Cannavaro|CB|176|90|1973|INT JUV RMA|L
+Pepe|CB|188|87|1983|POR RMA|L
+Kaká|AM|186|93|1982|MIL RMA|L
+Michael Owen|ST|173|88|1979|LIV RMA MUN|L
+Alfredo Di Stéfano|ST|178|95|1926|RMA|L
+Ferenc Puskás|ST|172|94|1927|RMA|L
+Lionel Messi|RW|170|96|1987|BAR PSG MIA
+Lamine Yamal|RW|180|90|2007|BAR
+Robert Lewandowski|ST|185|90|1988|DOR BAY BAR
+Raphinha|LW|176|87|1996|LEE BAR
+Pedri|CM|174|88|2002|BAR
+Gavi|CM|173|83|2004|BAR
+Frenkie de Jong|CM|181|86|1997|AJA BAR
+Pau Cubarsí|CB|184|83|2007|BAR
+Ronald Araújo|CB|188|84|1999|BAR
+Jules Koundé|RB|180|85|1998|SEV BAR
+Alejandro Balde|LB|175|81|2003|BAR
+Marc-André ter Stegen|GK|187|88|1992|BAR
+Joan García|GK|194|83|2001|ESP BAR
+Dani Olmo|AM|179|83|1998|LEI BAR
+Fermín López|AM|174|81|2003|BAR
+Ferran Torres|FW|184|80|2000|MCI BAR
+Marcus Rashford|LW|180|82|1997|MUN BAR
+Neymar|LW|175|91|1992|SAN BAR PSG
+Luis Suárez|ST|182|92|1987|AJA LIV BAR ATM MIA
+Sergio Busquets|CM|189|88|1988|BAR MIA|L
+Xavi|CM|170|92|1980|BAR|L
+Andrés Iniesta|CM|171|93|1984|BAR|L
+Carles Puyol|CB|178|89|1978|BAR|L
+Gerard Piqué|CB|194|88|1987|MUN BAR|L
+Ronaldinho|AM|182|94|1980|PSG BAR MIL|L
+Samuel Eto'o|ST|180|89|1981|BAR INT CHE|L
+Thierry Henry|ST|188|93|1977|JUV ARS BAR|L
+Dani Alves|RB|172|88|1983|SEV BAR JUV PSG|L
+Víctor Valdés|GK|183|85|1982|BAR MUN|L
+Zlatan Ibrahimović|ST|195|91|1981|AJA JUV INT BAR MIL PSG MUN|L
+Johan Cruyff|FW|178|96|1947|AJA BAR|L
+Diego Maradona|AM|165|97|1960|BAR NAP|L
+Rivaldo|AM|186|91|1972|BAR MIL|L
+Erling Haaland|ST|195|91|2000|DOR MCI
+Rodri|CM|191|90|1996|ATM MCI
+Phil Foden|AM|171|86|2000|MCI
+Bernardo Silva|CM|173|86|1994|MON MCI
+Rúben Dias|CB|187|87|1997|MCI
+Joško Gvardiol|CB|185|85|2002|MCI
+Gianluigi Donnarumma|GK|196|89|1999|MIL PSG MCI
+Ederson|GK|188|86|1993|MCI
+Omar Marmoush|ST|183|83|1999|MCI
+Jérémy Doku|LW|173|83|2002|MCI
+Rayan Cherki|AM|177|84|2003|LYO MCI
+Tijjani Reijnders|CM|185|85|1998|MIL MCI
+John Stones|CB|188|84|1994|EVE MCI
+Kyle Walker|RB|183|84|1990|TOT MCI MIL
+Jack Grealish|LW|180|83|1995|MCI EVE
+Kevin De Bruyne|CM|181|91|1991|CHE MCI NAP
+Sergio Agüero|ST|173|90|1988|ATM MCI BAR|L
+Vincent Kompany|CB|190|88|1986|MCI|L
+Yaya Touré|CM|188|89|1983|BAR MCI|L
+David Silva|AM|170|89|1986|MCI|L
+Bruno Fernandes|AM|179|87|1994|MUN
+Bryan Mbeumo|RW|171|84|1999|MUN
+Matheus Cunha|FW|184|83|1999|MUN
+Benjamin Šeško|ST|195|81|2003|MUN
+Kobbie Mainoo|CM|175|80|2005|MUN
+Lisandro Martínez|CB|175|84|1998|AJA MUN
+Harry Maguire|CB|194|80|1993|MUN
+André Onana|GK|190|82|1996|AJA INT MUN
+Paul Pogba|CM|191|87|1993|MUN JUV
+Wayne Rooney|ST|176|91|1985|EVE MUN|L
+Rio Ferdinand|CB|189|89|1978|MUN|L
+Nemanja Vidić|CB|189|89|1981|MUN INT|L
+Peter Schmeichel|GK|191|91|1963|MUN|L
+Edwin van der Sar|GK|197|89|1970|AJA JUV MUN|L
+Ryan Giggs|LW|179|89|1973|MUN|L
+Paul Scholes|CM|168|89|1974|MUN|L
+Roy Keane|CM|178|89|1971|MUN|L
+Eric Cantona|ST|187|90|1966|MUN|L
+Robin van Persie|ST|187|89|1983|ARS MUN|L
+Mohamed Salah|RW|175|91|1992|CHE ROM LIV
+Virgil van Dijk|CB|193|90|1991|LIV
+Alisson|GK|193|89|1992|ROM LIV
+Florian Wirtz|AM|177|88|2003|LEV LIV
+Alexander Isak|ST|192|87|1999|NEW LIV
+Hugo Ekitiké|ST|190|84|2002|PSG LIV
+Dominik Szoboszlai|CM|186|84|2000|LIV
+Alexis Mac Allister|CM|174|86|1998|LIV
+Ryan Gravenberch|CM|190|85|2002|AJA BAY LIV
+Ibrahima Konaté|CB|194|85|1999|LIV
+Cody Gakpo|LW|193|84|1999|LIV
+Andy Robertson|LB|178|84|1994|LIV
+Darwin Núñez|ST|187|81|1999|LIV
+Sadio Mané|LW|174|89|1992|LIV BAY
+Roberto Firmino|FW|181|86|1991|LIV
+Steven Gerrard|CM|183|91|1980|LIV|L
+Fernando Torres|ST|186|89|1984|ATM LIV CHE MIL|L
+Kenny Dalglish|ST|173|92|1951|LIV|L
+Jamie Carragher|CB|185|85|1978|LIV|L
+Bukayo Saka|RW|178|88|2001|ARS
+Martin Ødegaard|AM|178|87|1998|RMA ARS
+Declan Rice|CM|185|87|1999|ARS
+William Saliba|CB|192|87|2001|ARS
+Gabriel Magalhães|CB|190|86|1997|ARS
+David Raya|GK|183|86|1995|ARS
+Viktor Gyökeres|ST|187|86|1998|ARS
+Eberechi Eze|AM|173|84|1998|ARS
+Martín Zubimendi|CM|181|85|1999|ARS
+Kai Havertz|FW|193|83|1999|CHE ARS
+Gabriel Martinelli|LW|178|82|2001|ARS
+Dennis Bergkamp|ST|188|92|1969|AJA INT ARS|L
+Patrick Vieira|CM|193|90|1976|MIL ARS JUV INT MCI|L
+Tony Adams|CB|191|87|1966|ARS|L
+Petr Čech|GK|196|90|1982|CHE ARS|L
+Cesc Fàbregas|CM|180|88|1987|ARS BAR CHE|L
+Robert Pirès|LW|185|87|1973|ARS|L
+Cole Palmer|AM|189|87|2002|MCI CHE
+Enzo Fernández|CM|178|85|2001|CHE
+Moisés Caicedo|CM|178|86|2001|CHE
+Reece James|RB|182|83|1999|CHE
+João Pedro|ST|182|83|2001|CHE
+Robert Sánchez|GK|197|80|1997|CHE
+N'Golo Kanté|CM|168|89|1991|LEI CHE
+Frank Lampard|CM|184|91|1978|CHE MCI|L
+John Terry|CB|187|90|1980|CHE|L
+Didier Drogba|ST|189|91|1978|CHE|L
+Eden Hazard|LW|175|91|1991|CHE RMA|L
+Ashley Cole|LB|176|88|1980|ARS CHE ROM|L
+Claude Makélélé|CM|174|88|1973|RMA CHE PSG|L
+Harry Kane|ST|188|91|1993|TOT BAY
+Son Heung-min|LW|183|87|1992|TOT
+Micky van de Ven|CB|193|83|2001|TOT
+Cristian Romero|CB|185|85|1998|TOT
+Guglielmo Vicario|GK|194|83|1996|TOT
+James Maddison|AM|175|82|1996|TOT
+Peter Crouch|ST|201|80|1981|TOT LIV|L
+Manuel Neuer|GK|193|90|1986|BAY
+Thomas Müller|FW|185|88|1989|BAY
+Jamal Musiala|AM|184|88|2003|BAY
+Joshua Kimmich|CM|177|88|1995|BAY
+Michael Olise|RW|184|87|2001|BAY
+Dayot Upamecano|CB|186|84|1998|BAY
+Alphonso Davies|LB|183|83|2000|BAY
+Luis Díaz|LW|180|86|1997|POR LIV BAY
+Arjen Robben|RW|180|91|1984|CHE RMA BAY|L
+Franck Ribéry|LW|170|90|1983|BAY|L
+Philipp Lahm|RB|170|90|1983|BAY|L
+Oliver Kahn|GK|188|91|1969|BAY|L
+Bastian Schweinsteiger|CM|183|89|1984|BAY MUN|L
+Ousmane Dembélé|RW|178|90|1997|DOR BAR PSG
+Vitinha|CM|172|88|2000|PSG
+João Neves|CM|174|86|2004|PSG
+Achraf Hakimi|RB|181|88|1998|RMA DOR INT PSG
+Marquinhos|CB|183|87|1994|ROM PSG
+Nuno Mendes|LB|180|87|2002|PSG
+Khvicha Kvaratskhelia|LW|183|87|2001|NAP PSG
+Désiré Doué|RW|181|85|2005|REN PSG
+Marco Reus|AM|180|87|1989|DOR
+Gianluigi Buffon|GK|192|92|1978|JUV PSG|L
+Alessandro Del Piero|FW|174|91|1974|JUV|L
+Andrea Pirlo|CM|177|91|1979|INT MIL JUV|L
+Giorgio Chiellini|CB|187|88|1984|JUV|L
+Paolo Maldini|CB|186|93|1968|MIL|L
+Andriy Shevchenko|ST|183|91|1976|MIL CHE|L
+Kenan Yıldız|FW|185|83|2005|JUV
+Dušan Vlahović|ST|190|82|2000|JUV
+Lautaro Martínez|ST|174|88|1997|INT
+Marcus Thuram|ST|192|85|1997|INT
+Nicolò Barella|CM|172|86|1997|INT
+Rafael Leão|LW|188|85|1999|MIL
+Victor Osimhen|ST|186|86|1998|NAP GAL
+Scott McTominay|CM|191|85|1996|MUN NAP
+Antoine Griezmann|FW|176|87|1991|ATM BAR
+Jan Oblak|GK|188|87|1993|ATM
+Julián Álvarez|ST|170|87|2000|MCI ATM
+Koke|CM|176|83|1992|ATM
+Pelé|FW|173|98|1940|SAN|L`;
+const DB=RAW.trim().split('\n').map(l=>{const[n,pos,h,r,y,c,L]=l.split('|');return{n,pos,h:+h,r:+r,y:+y,c:c.split(' '),L:L==='L'}});
+const SLOTS=['ST','CM','CM','CB','GK'];
+const grp=p=>({GK:'GK',CB:'CB',LB:'CB',RB:'CB',CM:'CM',AM:'CM',RM:'CM'})[p]||'ST';
+const CATS={
+ tall:{t:'TALLEST',sub:'Highest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',hi:1,ask:'Height (cm)'},
+ short:{t:'SHORTEST',sub:'Lowest total height wins',k:'h',v:p=>p.h,f:v=>v+'cm',hi:0,ask:'Height (cm)'},
+ old:{t:'OLDEST',sub:'Highest total age wins',k:'y',v:p=>YEAR-p.y,f:v=>v+' yrs',hi:1,ask:'Birth year'},
+ rated:{t:'BEST RATED',sub:'Highest total rating wins',k:'r',v:p=>p.r,f:v=>String(v),hi:1,ask:'Rating out of 99'}};
+$('cat').innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">5 ${c.t.toLowerCase()} players</option>`).join('');
+$('club').innerHTML=Object.entries(CLUB).map(([k,c])=>`<option value="${k}">${c[0]}</option>`).join('')+'<option value="ANY">Any club</option>';
+
+const HOWB=`<p>Both players wear headphones with music on, so neither can hear the other's bids. The host taps <b>Next player</b> and you both shout or hold up bids.</p><p>The host enters the winning bid and taps who won. The winner chooses which empty spot (ST, CM, CM, CB or GK) the player goes in. You must keep at least $1 for every other empty spot.</p><p>When both teams are full, the team with the higher total rating wins.</p>`;
+const HOWQ=`<p>Pick a challenge and a team, for example the 5 tallest Real Madrid players. Both shout a name at the same time. The host types it and taps whoever said it first.</p><p>If you both said the same player, the slower one has to name someone else. Once both have 5, the totals are added up and the winner appears on screen.</p>`;
+
+let mode='bid',S;const photos={};
+const N=i=>($('n'+i).value.trim()||'Player '+(i+1));
+const say=t=>{$(mode==='quiz'?'msgQ':'msgB').textContent=t};
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const title=s=>s.replace(/(^|\s)\S/g,m=>m.toUpperCase());
+function cands(s){const k=norm(s);if(!k)return[];const tok=p=>norm(p.n).split(' ');
+ for(const f of[p=>norm(p.n)===k,p=>tok(p).slice(-1)[0]===k,p=>tok(p).includes(k),p=>norm(p.n).includes(k)]){const m=DB.filter(f);if(m.length)return m}return[]}
+function owner(n){for(const i of[0,1]){if(mode==='bid'?S.teams[i].some(s=>s.p&&s.p.n===n):S.quiz[i].some(p=>p.n===n))return i}return -1}
+
+function fresh(){const b=Math.max(5,Math.min(500,Math.round(+$('budget').value)||20));
+ S={money:[b,b],teams:[0,1].map(()=>SLOTS.map(pos=>({pos,p:null,price:0}))),quiz:[[],[]],cur:null,shown:[],hist:[],done:false,pending:null,last:null,warn:null};
+ $('amt').value=1;$('qvRow').classList.add('hide');ui();say('')}
+const KEYS=['money','teams','quiz','cur','shown','done','last'];
+function snap(){S.hist.push(JSON.stringify(KEYS.reduce((o,k)=>(o[k]=S[k],o),{})))}
+function undo(){const h=S.hist.pop();if(!h)return say('Nothing to undo');Object.assign(S,JSON.parse(h));S.pending=null;S.warn=null;ui();say('Undone')}
+
+function nextPlayer(){if(S.done)return;const pool=$('pool').value;
+ let ps=DB.filter(p=>(pool==='all'||(pool==='old')===p.L)&&!S.shown.includes(p.n));
+ const need=new Set();S.teams.forEach(t=>t.forEach(s=>{if(!s.p)need.add(s.pos)}));
+ const pref=ps.filter(p=>need.has(grp(p.pos)));if(pref.length)ps=pref;
+ if(!ps.length)return say('No players left in this pool. Switch the pool or type a name.');
+ snap();S.cur=ps[Math.random()*ps.length|0];S.shown.push(S.cur.n);S.pending=null;$('amt').value=1;ui();say('Bidding is open.')}
+function customAuction(){if(S.done)return;const v=$('custom').value.trim();if(!v)return say('Type a player name first');const c=cands(v);
+ if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));
+ const p=c[0]||{n:title(v),pos:'?',h:0,r:75,y:0,c:[]};
+ if(owner(p.n)>=0)return say(p.n+' is already in a team');
+ snap();S.cur=p;S.shown.push(p.n);S.pending=null;$('custom').value='';$('amt').value=1;ui();say(c[0]?'Bidding is open.':p.n+" isn't on our list, so he counts as a 75 rating.")}
+function sell(i){if(S.done||!S.cur)return say('Tap Next player first');const price=Math.round(+$('amt').value);const empty=S.teams[i].filter(s=>!s.p).length;
+ if(!empty)return say(N(i)+"'s team is already full");if(!(price>=1))return say('Bids start at $1');
+ const max=S.money[i]-(empty-1);if(price>max)return say(`${N(i)} can bid $${max} at most (keep $1 for each other empty spot)`);
+ S.pending={i,price};ui();say('')}
+function place(k){const{i,price}=S.pending;snap();const s=S.teams[i][k];s.p=S.cur;s.price=price;S.money[i]-=price;S.last={i};S.cur=null;S.pending=null;
+ if(S.teams.every(t=>t.every(x=>x.p)))S.done=true;ui();say(S.done?'Both teams are full. The result is on screen.':`${s.p.n} joins ${N(i)} at ${s.pos}. Tap Next player.`)}
+function reveal(){const A=$('sb0').value,B=$('sb1').value;if(A===''||B==='')return say('Both players need to type a bid');const a=Math.round(+A),b=Math.round(+B);
+ if(a===b)return say(`Tie at $${a}. Bid again.`);$('amt').value=Math.max(a,b);$('sb0').value=$('sb1').value='';sell(a>b?0:1);
+ if(!S.pending)return;$('slotQ').textContent=`${N(0)} $${a} vs ${N(1)} $${b}. `+$('slotQ').textContent}
+function skip(){if(!S.cur)return;snap();S.cur=null;S.pending=null;ui();say('No sale. Tap Next player.')}
+
+function pick(i){if(S.done)return;const v=$('qn').value.trim();if(!v)return say('Type the name that was said first');const C=CATS[$('cat').value],club=$('club').value;
+ if(S.quiz[i].length>=5)return say(N(i)+' already has 5 players');
+ const c=cands(v);if(c.length>1&&norm(c[0].n)!==norm(v))return say('Which one? '+c.slice(0,4).map(p=>p.n).join(', '));
+ let p=c[0];
+ if(!p){const q=$('qv').value;if(q===''){$('qvRow').classList.remove('hide');$('qvl').textContent=C.ask;$('qv').focus();return say(`${title(v)} isn't on our list. Enter his ${C.ask.toLowerCase()}, then tap again.`)}
+  p={n:title(v),pos:'?',h:0,r:0,y:YEAR,c:[]};p[C.k]=+q}
+ const o=owner(p.n);if(o>=0)return say(`${p.n} already belongs to ${N(o)}. Name someone else.`);
+ if(club!=='ANY'&&p.c.length&&!p.c.includes(club)&&S.warn!==p.n){S.warn=p.n;return say(`Our list doesn't show ${p.n} at ${CLUB[club][0]}. Tap again to allow him anyway.`)}
+ snap();S.quiz[i].push(p);S.last={i,p};S.warn=null;$('qn').value='';$('qv').value='';$('qvRow').classList.add('hide');
+ if(S.quiz.every(t=>t.length>=5))S.done=true;ui();say(S.done?'Both teams are done. The result is on screen.':`${p.n} goes to ${N(i)} (${C.f(C.v(p))})`)}
+
+function result(){if(mode==='bid')return{s:S.teams.map(t=>t.reduce((a,x)=>a+(x.p?x.p.r:0),0)),f:v=>String(v),hi:1,sub:'Total team rating'};
+ const C=CATS[$('cat').value];return{s:S.quiz.map(t=>t.reduce((a,p)=>a+C.v(p),0)),f:C.f,hi:C.hi,sub:C.sub}}
+
+function ui(){const q=mode==='quiz';
+ $('tBid').setAttribute('aria-pressed',!q);$('tQuiz').setAttribute('aria-pressed',q);
+ $('setBid').classList.toggle('hide',q);$('setQuiz').classList.toggle('hide',!q);$('pBid').classList.toggle('hide',q);$('pQuiz').classList.toggle('hide',!q);
+ for(const i of[0,1]){$('sell'+i).textContent='Sold to '+N(i);$('q'+i).textContent=N(i)+' said it first';$('sbl'+i).textContent=N(i)+"'s bid";
+  $('sell'+i).disabled=S.done||!S.cur||S.teams[i].every(s=>s.p);$('q'+i).disabled=S.done||S.quiz[i].length>=5}
+ $('nextBtn').disabled=S.done;$('skipBtn').disabled=!S.cur;
+ $('slotBox').classList.toggle('hide',!S.pending);
+ if(S.pending){const{i,price}=S.pending;$('slotQ').textContent=`${N(i)} buys ${S.cur.n} for $${price}. Which spot?`;
+  $('slots').innerHTML=S.teams[i].map((s,k)=>s.p?'':`<button data-k="${k}" class="${s.pos===grp(S.cur.pos)?'hint':''}">${s.pos}</button>`).join('')+'<button data-k="x">Cancel</button>'}
+ const club=$('club').value,list=q&&club!=='ANY'?DB.filter(p=>p.c.includes(club)):DB;
+ $('names').innerHTML=list.map(p=>`<option value="${p.n}"></option>`).join('');
+ $('how').innerHTML=q?HOWQ:HOWB}
+
+/* ---------- stage drawing ---------- */
+const vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.setAttribute('playsinline','');let stream=null;
+function txt(s,x,y,size,col,al,maxW){s=String(s);al=al||'left';maxW=maxW||1040;let z=size;ctx.font=`${z}px ${FONT}`;
+ while(ctx.measureText(s).width>maxW&&z>16){z-=2;ctx.font=`${z}px ${FONT}`}
+ ctx.textAlign=al;ctx.textBaseline='alphabetic';ctx.lineJoin='round';ctx.lineWidth=z*.17;ctx.strokeStyle='#000';ctx.strokeText(s,x,y);ctx.fillStyle=col;ctx.fillText(s,x,y);return ctx.measureText(s).width}
+function rr(x,y,w,h,r){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)}
+function bg(){if(stream&&vid.readyState>=2&&vid.videoWidth){const vw=vid.videoWidth,vh=vid.videoHeight,sc=Math.max(W/vw,H/vh),dw=vw*sc,dh=vh*sc;
+  ctx.save();ctx.translate(W,0);ctx.scale(-1,1);ctx.drawImage(vid,(W-dw)/2,(H-dh)/2,dw,dh);ctx.restore();return}
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#17402a');g.addColorStop(1,'#06120b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='rgba(255,255,255,.035)';for(let i=0;i<12;i+=2)ctx.fillRect(0,i*H/12,W,H/12);
+ ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(W/2,1060,170,0,7);ctx.moveTo(0,1060);ctx.lineTo(W,1060);ctx.stroke()}
+function card(p,tag,cap){const x=380,y=290,w=320,h=330,ph=p&&photos[p.n];ctx.save();rr(x,y,w,h,18);ctx.clip();
+ if(ph){const sc=Math.max(w/ph.width,h/ph.height);ctx.drawImage(ph,x+(w-ph.width*sc)/2,y+(h-ph.height*sc)/2,ph.width*sc,ph.height*sc)}
+ else{const cc=p?p.c.filter(k=>CLUB[k]).slice(-1)[0]:null,g=ctx.createLinearGradient(x,y,x,y+h);g.addColorStop(0,cc?CLUB[cc][1]:'#2f4a3a');g.addColorStop(1,'#080d0a');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='rgba(255,255,255,.10)';ctx.beginPath();ctx.arc(x+w/2,y+h+40,150,Math.PI,0);ctx.fill();ctx.beginPath();ctx.arc(x+w/2,y+h*.5,72,0,7);ctx.fill();
+  txt(p?p.n.split(' ').map(s=>s[0]).slice(0,2).join(''):'?',x+w/2,y+h*.42,p?110:170,'#fff','center',w-40)}
+ ctx.restore();ctx.lineWidth=6;ctx.strokeStyle='rgba(255,255,255,.9)';rr(x,y,w,h,18);ctx.stroke();
+ if(tag)txt(tag,x+w/2,ph?y+h*.62:y+h-36,ph?120:96,'#f5e663','center',w-20);
+ txt(cap,540,y+h+78,62,'#fff','center',980)}
+function team(i,q,C){const R=i===1;
+ for(let k=0;k<5;k++){const yy=1470+k*100,sl=q?{pos:(k+1)+'.',p:S.quiz[i][k]||null}:S.teams[i][k];
+  const lw=txt(R?'- '+sl.pos:sl.pos+' -',R?1060:20,yy,84,'#fff',R?'right':'left',240);
+  if(sl.p){const nx=R?1060-lw-16:20+lw+16,mw=520-lw-36;txt(sl.p.n,nx,yy-24,44,'#fff',R?'right':'left',mw);
+   txt(q?C.f(C.v(sl.p)):'$'+sl.price,nx,yy+18,34,'#43e35a',R?'right':'left',mw)}}}
+function winner(){const r=result(),[a,b]=r.s;let t="IT'S A DRAW!";if(a!==b)t=N((r.hi?a>b:a<b)?0:1).toUpperCase()+' WINS!';
+ ctx.fillStyle='rgba(0,0,0,.78)';rr(90,760,900,440,30);ctx.fill();txt(t,540,900,120,'#f5e663','center',840);
+ txt(`${N(0)}: ${r.f(a)}`,540,1005,64,'#fff','center',820);txt(`${N(1)}: ${r.f(b)}`,540,1090,64,'#fff','center',820);txt(r.sub,540,1160,40,'#9fe8ad','center',820)}
+function draw(){try{bg();const q=mode==='quiz',C=CATS[$('cat').value];
+ if(q){const club=$('club').value,L=S.last&&S.last.p;txt(`BUILD THE 5 ${C.t}`,540,150,92,'#f5e663','center',1040);
+  txt(`(${club==='ANY'?'Any club':CLUB[club][0]} players, first to say it!)`,540,235,52,'#fff','center',1000);
+  card(L,L?C.f(C.v(L)):'',S.done?'Full time':L?L.n:'Say a name!')}
+ else{txt('MUTED FOOTBALLER DRAFT',540,150,92,'#f5e663','center',1040);txt('(Highest Bid Takes It!)',540,235,60,'#fff','center');
+  card(S.cur,S.cur?'$'+(Math.round(+$('amt').value)||0):'',S.done?'Full time':S.cur?S.cur.n:'Next player…')}
+ const R=q?result():null,val=i=>q?C.f(R.s[i]):'$'+S.money[i],y=1330;
+ const w0=txt(N(0),20,y,100,'#fff','left',300);ctx.fillStyle='#fff';ctx.fillRect(20,y+18,w0,8);txt(val(0),20+w0+22,y,100,'#43e35a','left',498-w0);
+ const wv=txt(val(1),1060,y,100,'#43e35a','right',220),w1=txt(N(1),1060-wv-22,y,100,'#fff','right',280);ctx.fillStyle='#fff';ctx.fillRect(1060-wv-22-w1,y+18,w1,8);
+ team(0,q,C);team(1,q,C);if(S.done)winner()}catch(e){}
+ requestAnimationFrame(draw)}
+
+/* ---------- camera + recording ---------- */
+function camNo(){$('camMsg').textContent="The camera is blocked in this view. Open the game file from a normal web link in Safari or Chrome to film yourselves, or use your phone's screen recording."}
+async function cam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;$('camBtn').textContent='Start camera';return}
+ const md=navigator.mediaDevices;if(!md||!md.getUserMedia)return camNo();
+ try{stream=await md.getUserMedia({video:{facingMode:'user'},audio:true})}catch(e){try{stream=await md.getUserMedia({video:{facingMode:'user'}})}catch(e2){stream=null;return camNo()}}
+ vid.srcObject=stream;try{await vid.play()}catch(e){}$('camBtn').textContent='Stop camera';$('camMsg').textContent=stream.getAudioTracks().length?'':'Camera on, without sound.'}
+let rec=null,chunks=[];
+function record(){if(rec){rec.stop();return}
+ if(!cv.captureStream||!window.MediaRecorder){$('camMsg').textContent='Recording is not supported in this browser.';return}
+ const mt=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+ const ms=new MediaStream([...cv.captureStream(30).getVideoTracks(),...(stream?stream.getAudioTracks():[])]);
+ try{rec=new MediaRecorder(ms,mt?{mimeType:mt}:{})}catch(e){rec=null;$('camMsg').textContent='Recording could not start here.';return}
+ chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{const type=(rec&&rec.mimeType)||mt||'video/webm',u=URL.createObjectURL(new Blob(chunks,{type}));$('prev').src=u;$('dl').href=u;$('dl').download='footballer-draft.'+(type.includes('mp4')?'mp4':'webm');
+  $('out').classList.remove('hide');rec=null;$('recBtn').textContent='Record';$('camMsg').textContent='Recording finished. Watch it below or tap Save the video.'};
+ rec.start(1000);$('recBtn').textContent='Stop recording';$('camMsg').textContent='Recording the stage…'}
+function photo(e){const f=e.target.files[0],p=mode==='quiz'?S.last&&S.last.p:S.cur;e.target.value='';if(!f)return;if(!p)return say('Put a player on the card first');
+ const img=new Image();img.onload=()=>{photos[p.n]=img};img.src=URL.createObjectURL(f)}
+
+/* ---------- wiring ---------- */
+$('tBid').onclick=()=>{mode='bid';fresh()};$('tQuiz').onclick=()=>{mode='quiz';fresh()};
+['budget','pool','cat','club'].forEach(id=>$(id).addEventListener('change',fresh));
+['n0','n1'].forEach(id=>{try{const v=localStorage.getItem('fd-'+id);if(v)$(id).value=v}catch(e){}
+ $(id).addEventListener('input',()=>{try{localStorage.setItem('fd-'+id,$(id).value)}catch(e){}ui()})});
+$('nextBtn').onclick=nextPlayer;$('customBtn').onclick=customAuction;$('skipBtn').onclick=skip;$('reveal').onclick=reveal;
+$('sell0').onclick=()=>sell(0);$('sell1').onclick=()=>sell(1);$('q0').onclick=()=>pick(0);$('q1').onclick=()=>pick(1);
+$('plus').onclick=()=>{$('amt').value=(Math.round(+$('amt').value)||0)+1};$('minus').onclick=()=>{$('amt').value=Math.max(1,(Math.round(+$('amt').value)||1)-1)};
+$('slots').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k===undefined)return;if(k==='x'){S.pending=null;ui();return}place(+k)};
+$('undoBtn').onclick=()=>undo();$('newBtn').onclick=fresh;$('camBtn').onclick=cam;$('recBtn').onclick=record;
+$('photo').onchange=photo;$('photo2').onchange=photo;
+fresh();if(document.fonts&&document.fonts.load)document.fonts.load(`80px Anton`).catch(()=>{});
+requestAnimationFrame(draw);
+}
+</script>
+</body></html>
